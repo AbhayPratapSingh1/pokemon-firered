@@ -1,7 +1,5 @@
 import * as THREE from "three";
 import { createHouse } from "./Buildings.js";
-import { createOakLab } from "./buildings/OakLab/OakLab.js";
-import { createGaryExterior } from "./buildings/GaryHouse/GaryHouse.js";
 import { buildTree } from "./components/Tree/Tree.js";
 import { listModels } from "./ModelStore.js";
 import { buildModelGroup } from "./ModelLoader.js";
@@ -169,10 +167,16 @@ function createTownLayout(scene) {
     PLAYERS_HOUSE_WALL_HEIGHT, PLAYERS_HOUSE_ROOF_HEIGHT
   ));
 
-  // --- Gary's House (exterior only, same dimensions as player's) ---
-  const garyHouse = createGaryExterior({
+  // --- Gary's House (same house style, teal roof) ---
+  const garyHouse = createHouse({
     position: GARY_HOUSE_POSITION,
     rotationY: 0,
+    wallColor: 0xe8e2d6,
+    roofColor: 0x2a9d8f,
+    depth: PLAYERS_HOUSE_DEPTH,
+    width: PLAYERS_HOUSE_WIDTH,
+    wallHeight: PLAYERS_HOUSE_WALL_HEIGHT,
+    roofHeight: PLAYERS_HOUSE_ROOF_HEIGHT,
   });
   scene.add(garyHouse);
   obstacles.push(...buildPlayersHouseObstacles(
@@ -181,15 +185,22 @@ function createTownLayout(scene) {
     PLAYERS_HOUSE_WALL_HEIGHT, PLAYERS_HOUSE_ROOF_HEIGHT
   ));
 
-  // --- Oak's Lab (exterior only) ---
-  const oakLab = createOakLab({
+  // --- Oak's Lab (same house style, different colors) ---
+  const oakLab = createHouse({
     position: OAK_LAB_POSITION,
     rotationY: Math.PI,
+    wallColor: 0xf1f1f1,
+    roofColor: 0xd62828,
+    depth: PLAYERS_HOUSE_DEPTH,
+    width: PLAYERS_HOUSE_WIDTH,
+    wallHeight: PLAYERS_HOUSE_WALL_HEIGHT,
+    roofHeight: PLAYERS_HOUSE_ROOF_HEIGHT,
   });
   scene.add(oakLab);
   obstacles.push(...buildPlayersHouseObstacles(
     oakLab, OAK_LAB_POSITION,
-    10, 8, 3.2, 0.35
+    PLAYERS_HOUSE_WIDTH, PLAYERS_HOUSE_DEPTH,
+    PLAYERS_HOUSE_WALL_HEIGHT, PLAYERS_HOUSE_ROOF_HEIGHT
   ));
 
   // --- Paths ---
