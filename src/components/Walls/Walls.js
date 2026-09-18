@@ -1,6 +1,6 @@
 import { makeBox, at } from "../shared.js";
 import {
-  HALF_W, HALF_D, DOOR_HALF_WIDTH, FLOOR_WIDTH, FLOOR_DEPTH,
+  HALF_W, HALF_D, DOOR_HALF_WIDTH, DOOR_HEIGHT, FLOOR_WIDTH, FLOOR_DEPTH,
   WALL_THICK, BUILDING_TOTAL_HEIGHT,
 } from "../../house/AshHouse/constants.js";
 import { WALLS_CONFIG } from "./config.js";
