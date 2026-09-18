@@ -10,7 +10,7 @@ import { buildFence } from "../../components/Fence/Fence.js";
  * and small front fence. Similar structure to the player's house but
  * with a teal roof and cream walls.
  */
-export function createGaryHouse({
+export function createGaryExterior({
   position,
   rotationY = 0,
   config = GARY_HOUSE_CONFIG,

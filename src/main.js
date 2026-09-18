@@ -54,6 +54,15 @@ const player = new Player(scene, new THREE.Vector3(0, 0, 0));
 // --- Player's house interior (FireRed-style recreation) ---
 const playerHouse = setupPlayerHouse(scene, PLAYERS_HOUSE_DOOR_POSITION);
 
+// --- Gary's House interior (mirror of Ash's House) ---
+const garyHouse = world.garyHouseController;
+
+// --- Oak's Lab interior ---
+const oakLab = world.oakLabController;
+
+// All interior controllers for easy iteration
+const interiorControllers = [playerHouse, garyHouse, oakLab];
+
 // --- Input & Camera controller ---
 const input = new InputManager(renderer.domElement);
 const cameraController = new CameraController(camera);
@@ -75,18 +84,36 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.1); // clamp to avoid huge steps on tab-switch
 
   input.update();
-  playerHouse.update(delta, player);
+
+  // Update all interior controllers
+  for (const ctrl of interiorControllers) {
+    ctrl.update(delta, player);
+  }
+
+  // Merge obstacles from all controllers
+  const allObstacles = interiorControllers.reduce(
+    (acc, ctrl) => acc.concat(ctrl.getObstacles(world.obstacles)),
+    []
+  );
+  const allCollisionMeshes = interiorControllers.reduce(
+    (acc, ctrl) => acc.concat(ctrl.getCollisionMeshes(outdoorCollisionMeshes)),
+    []
+  );
+
   player.update(
     delta,
     input,
     cameraController.yaw,
-    playerHouse.getObstacles(world.obstacles),
+    allObstacles,
     playerHouse.getGroundHeight
   );
-  cameraController.update(delta, input, player, playerHouse.getCollisionMeshes(outdoorCollisionMeshes));
-  interaction.update(delta, input, player, playerHouse.interactables);
+  cameraController.update(delta, input, player, allCollisionMeshes);
 
-  // Temporary diagnostic HUD for the staircase collision bug report.
+  // Gather interactables from all interiors
+  const allInteractables = interiorControllers.flatMap((c) => c.interactables || []);
+  interaction.update(delta, input, player, allInteractables);
+
+  // Debug HUD
   const debugEl = document.getElementById("debug-stair");
   if (debugEl) debugEl.textContent = playerHouse.getDebugInfo(player);
 

@@ -1,10 +1,12 @@
 import * as THREE from "three";
 import { createHouse } from "./Buildings.js";
 import { createOakLab } from "./buildings/OakLab/OakLab.js";
-import { createGaryHouse } from "./buildings/GaryHouse/GaryHouse.js";
+import { createGaryExterior } from "./buildings/GaryHouse/GaryHouse.js";
 import { buildTree } from "./components/Tree/Tree.js";
 import { listModels } from "./ModelStore.js";
 import { buildModelGroup } from "./ModelLoader.js";
+import { setupGaryHouse } from "./house/GaryHouse/GaryHouse.js";
+import { Teleporter } from "./Teleporter.js";
 
 const GROUND_SIZE = 200;
 const TREE_COUNT = 16;
@@ -236,8 +238,8 @@ function createTownLayout(scene) {
   scene.add(playersHouse);
   obstacles.push(...buildPlayersHouseObstacles(playersHouse));
 
-  // Gary's house (new component: chimney, mailbox, fence)
-  const neighborsHouse = createGaryHouse({
+  // Gary's house exterior (chimney, mailbox, fence)
+  const neighborsHouse = createGaryExterior({
     position: new THREE.Vector3(14, 0, -14),
     rotationY: 0,
   });
@@ -248,7 +250,7 @@ function createTownLayout(scene) {
     6, 6, 5.2, 0, 0.7
   ));
 
-  // Oak's lab (new component: sign, windows, flat roof)
+  // Oak's lab (sign, windows, flat roof)
   const lab = createOakLab({
     position: new THREE.Vector3(0, 0, 16),
     rotationY: Math.PI,
@@ -278,7 +280,90 @@ function createTownLayout(scene) {
 
   placeDemoSavedModel(scene, obstacles);
 
-  return obstacles;
+  // --- Interior controllers (teleporter-based) ---
+  const garyHouseController = setupGaryHouseInterior(
+    scene,
+    new THREE.Vector3(14, 0, -14 + 3)  // Gary's door at +Z face
+  );
+
+  const oakLabController = setupOakLabInterior(
+    scene,
+    new THREE.Vector3(0, 0, 16 - 4)  // Oak's door at -Z face (rotated PI)
+  );
+
+  return {
+    obstacles,
+    garyHouseController,
+    oakLabController,
+  };
+}
+
+/**
+ * Oak's Lab — interior is already rendered inside the building.
+ * Uses teleporters to move player in/out through the door.
+ */
+function setupOakLabInterior(scene, doorWorldPos) {
+  const LAB_ORIGIN = new THREE.Vector3(0, 0, 16);
+  const LAB_WIDTH = 10;
+  const LAB_DEPTH = 8;
+  const LAB_HALF_D = LAB_DEPTH / 2;
+
+  const teleportToInside = new Teleporter({
+    from: { x: doorWorldPos.x, z: doorWorldPos.z - 0.8, radius: 1.0 },
+    to:   { x: LAB_ORIGIN.x, z: LAB_ORIGIN.z - LAB_HALF_D + 1.5 },
+    cooldown: 0.8,
+    color: 0x00e5ff,
+    showVisual: false,
+  });
+
+  const teleportToOutside = new Teleporter({
+    from: { x: LAB_ORIGIN.x, z: LAB_ORIGIN.z - LAB_HALF_D + 0.5, radius: 1.0 },
+    to:   { x: doorWorldPos.x, z: doorWorldPos.z - 1.5 },
+    cooldown: 0.8,
+    color: 0xff9100,
+    showVisual: false,
+  });
+
+  const TELEPORT_COOLDOWN = 0.8;
+
+  // Oak's lab interior is simple — no stairs, just flat floor.
+  // We don't need to swap collision since the interior walls are already
+  // inside the building geometry. Just handle teleportation.
+  return {
+    inside: false,
+    cooldown: 0,
+    currentFloor: 0,
+    interactables: [],
+
+    getObstacles(outdoorObstacles) {
+      return outdoorObstacles;
+    },
+
+    getCollisionMeshes(outdoorMeshes) {
+      return outdoorMeshes;
+    },
+
+    getGroundHeight: () => 0,
+
+    update(delta, player) {
+      if (this.cooldown > 0) {
+        this.cooldown -= delta;
+        return;
+      }
+
+      if (!this.inside && teleportToInside.update(player, delta)) {
+        this.inside = true;
+        this.cooldown = TELEPORT_COOLDOWN;
+      } else if (this.inside && teleportToOutside.update(player, delta)) {
+        this.inside = false;
+        this.cooldown = TELEPORT_COOLDOWN;
+      }
+    },
+
+    getDebugInfo() {
+      return this.inside ? "inside oak lab" : "outside";
+    },
+  };
 }
 
 /**
@@ -311,7 +396,7 @@ export function createWorld(scene) {
   const ground = createGround();
   scene.add(ground);
 
-  const obstacles = createTownLayout(scene);
+  const { obstacles, garyHouseController, oakLabController } = createTownLayout(scene);
 
-  return { ground, obstacles, size: GROUND_SIZE };
+  return { ground, obstacles, size: GROUND_SIZE, garyHouseController, oakLabController };
 }
