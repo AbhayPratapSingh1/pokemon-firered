@@ -88,6 +88,54 @@ const grid = new THREE.GridHelper(GROUND_SIZE, GROUND_SIZE * 2, 0x2e5e2e, 0x2e5e
 grid.position.y = 0.01;
 scene.add(grid);
 
+// --- Sea around the build area boundary ------------------------------------
+const SEA_COLOR = 0x1976d2;
+const SEA_OPACITY = 0.6;
+const HALF = GROUND_SIZE / 2;        // 60
+const SEA_EXTEND = 50;                // how far the sea stretches beyond the ground
+const SEA_DEPTH = 0.15;
+const seaMat = new THREE.MeshStandardMaterial({
+  color: SEA_COLOR,
+  transparent: true,
+  opacity: SEA_OPACITY,
+  roughness: 0.2,
+  metalness: 0.3,
+});
+
+// North strip (top edge, extends in +Z)
+const seaNorth = new THREE.Mesh(new THREE.BoxGeometry(GROUND_SIZE + SEA_EXTEND * 2, SEA_DEPTH, SEA_EXTEND), seaMat);
+seaNorth.position.set(0, SEA_DEPTH / 2, HALF + SEA_EXTEND / 2);
+scene.add(seaNorth);
+
+// South strip (bottom edge, extends in -Z)
+const seaSouth = new THREE.Mesh(new THREE.BoxGeometry(GROUND_SIZE + SEA_EXTEND * 2, SEA_DEPTH, SEA_EXTEND), seaMat);
+seaSouth.position.set(0, SEA_DEPTH / 2, -(HALF + SEA_EXTEND / 2));
+scene.add(seaSouth);
+
+// East strip (right edge, extends in +X)
+const seaEast = new THREE.Mesh(new THREE.BoxGeometry(SEA_EXTEND, SEA_DEPTH, GROUND_SIZE), seaMat);
+seaEast.position.set(HALF + SEA_EXTEND / 2, SEA_DEPTH / 2, 0);
+scene.add(seaEast);
+
+// West strip (left edge, extends in -X)
+const seaWest = new THREE.Mesh(new THREE.BoxGeometry(SEA_EXTEND, SEA_DEPTH, GROUND_SIZE), seaMat);
+seaWest.position.set(-(HALF + SEA_EXTEND / 2), SEA_DEPTH / 2, 0);
+scene.add(seaWest);
+
+// Corner fills
+const cornerSize = SEA_EXTEND;
+const corners = [
+  { x: HALF + cornerSize / 2, z: HALF + cornerSize / 2 },
+  { x: -(HALF + cornerSize / 2), z: HALF + cornerSize / 2 },
+  { x: HALF + cornerSize / 2, z: -(HALF + cornerSize / 2) },
+  { x: -(HALF + cornerSize / 2), z: -(HALF + cornerSize / 2) },
+];
+for (const c of corners) {
+  const corner = new THREE.Mesh(new THREE.BoxGeometry(cornerSize, SEA_DEPTH, cornerSize), seaMat);
+  corner.position.set(c.x, SEA_DEPTH / 2, c.z);
+  scene.add(corner);
+}
+
 const partsGroup = new THREE.Group();
 scene.add(partsGroup);
 
