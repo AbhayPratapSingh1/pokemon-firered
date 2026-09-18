@@ -61,6 +61,22 @@ export function initInspector(state) {
     if (object) state.partsGroup.remove(object);
     addPartToScene(state, part);
     showHighlight(part.id);
+
+    // Re-attach transform controls if this is the selected part
+    if (state.selectedPartId === part.id) {
+      attachTransformForPart(part);
+    }
+  }
+
+  function attachTransformForPart(part) {
+    const object = findObjectByPartId(state.partsGroup, part.id);
+    if (object) {
+      state.attachTransform(object, part);
+    }
+  }
+
+  function detachTransformForPart() {
+    state.detachTransform();
   }
 
   /** A label + numeric input (editable directly, and via -/+ step buttons). */
@@ -181,27 +197,74 @@ export function initInspector(state) {
       sectionLabel("Appearance");
       addColorField(part);
     }
+
+    // Keyboard shortcuts hint
+    const hint = document.createElement("div");
+    hint.className = "inspector-hint";
+    hint.textContent = "Arrows: move | Shift+Up/Down: height | R/F: rotate | +/-: scale | Del: delete | Ctrl+D: duplicate | Esc: deselect";
+    body.appendChild(hint);
   }
 
-  state.onSelectPart = (partId) => {
+  function selectPart(partId) {
     state.selectedPartId = partId;
     showHighlight(partId);
     renderInspector();
-  };
 
-  state.onDeselect = () => {
+    // Attach transform controls for drag-to-move
+    const part = state.parts.find((p) => p.id === partId);
+    if (part) {
+      attachTransformForPart(part);
+    }
+  }
+
+  function deselectPart() {
     state.selectedPartId = null;
     clearHighlight();
+    detachTransformForPart();
     renderInspector();
-  };
+  }
 
-  deleteBtn.addEventListener("click", () => {
+  function deletePart() {
     if (!state.selectedPartId) return;
     const object = findObjectByPartId(state.partsGroup, state.selectedPartId);
     if (object) state.partsGroup.remove(object);
     state.parts = state.parts.filter((p) => p.id !== state.selectedPartId);
-    state.onDeselect();
-  });
+    deselectPart();
+  }
+
+  function duplicatePart() {
+    if (!state.selectedPartId) return;
+    const part = state.parts.find((p) => p.id === state.selectedPartId);
+    if (!part) return;
+
+    const newPart = {
+      ...JSON.parse(JSON.stringify(part)),
+      id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      position: { ...part.position, x: part.position.x + 1 },
+    };
+    state.parts.push(newPart);
+    addPartToScene(state, newPart);
+    selectPart(newPart.id);
+  }
+
+  // --- Wire up state callbacks -----------------------------------------------
+
+  state.onSelectPart = selectPart;
+  state.onDeselect = deselectPart;
+  state.onDeletePart = deletePart;
+  state.onDuplicatePart = duplicatePart;
+
+  state.onPartChanged = (part) => {
+    rebuildPart(part);
+    renderInspector();
+  };
+
+  state.onToolDisarmed = () => {
+    // Refresh UI when tool is disarmed via keyboard
+    renderInspector();
+  };
+
+  deleteBtn.addEventListener("click", deletePart);
 
   renderInspector();
 }

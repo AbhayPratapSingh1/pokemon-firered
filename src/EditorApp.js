@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { initPalette } from "./EditorPalette.js";
-import { initPlacement } from "./EditorPlacement.js";
+import { initPlacement, addPartToScene } from "./EditorPlacement.js";
 import { initInspector } from "./EditorInspector.js";
 import { initCameraPan } from "./EditorCameraPan.js";
 
@@ -23,10 +24,42 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 1, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.1;
-controls.maxPolarAngle = Math.PI / 2 - 0.03; // keep the camera from going under the ground
+controls.maxPolarAngle = Math.PI / 2 - 0.03;
 controls.minDistance = 3;
 controls.maxDistance = 90;
 controls.update();
+
+// --- TransformControls for drag-to-move ------------------------------------
+const transformControls = new TransformControls(camera, renderer.domElement);
+transformControls.setMode("translate");
+transformControls.setTranslationSnap(0.5);
+transformControls.setRotationSnap(THREE.MathUtils.degToRad(15));
+transformControls.setScaleSnap(0.1);
+transformControls.visible = false;
+transformControls.enabled = false;
+scene.add(transformControls.getHelper());
+
+// Disable orbit controls while dragging with TransformControls
+transformControls.addEventListener("dragging-changed", (event) => {
+  controls.enabled = !event.value;
+});
+
+// Sync part data when drag ends
+let dragPart = null;
+transformControls.addEventListener("objectChange", () => {
+  if (!dragPart) return;
+  const obj = transformControls.object;
+  if (!obj) return;
+  dragPart.position.x = Math.round(obj.position.x * 10) / 10;
+  dragPart.position.y = Math.round(obj.position.y * 10) / 10;
+  dragPart.position.z = Math.round(obj.position.z * 10) / 10;
+});
+transformControls.addEventListener("mouseUp", () => {
+  if (dragPart) {
+    state.onPartChanged?.(dragPart);
+    dragPart = null;
+  }
+});
 
 const hemiLight = new THREE.HemisphereLight(0xbfd9ff, 0x3a7d44, 0.9);
 scene.add(hemiLight);
@@ -71,6 +104,24 @@ const state = {
   editingModelId: null,
   onSelectPart: null,
   onDeselect: null,
+  onDeletePart: null,
+  onDuplicatePart: null,
+  onPartChanged: null,
+  onToolDisarmed: null,
+  // TransformControls helpers
+  transformControls,
+  attachTransform(obj, part) {
+    transformControls.attach(obj);
+    transformControls.visible = true;
+    transformControls.enabled = true;
+    dragPart = part;
+  },
+  detachTransform() {
+    transformControls.detach();
+    transformControls.visible = false;
+    transformControls.enabled = false;
+    dragPart = null;
+  },
 };
 
 initPalette(state);

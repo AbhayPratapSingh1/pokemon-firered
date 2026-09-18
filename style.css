@@ -442,6 +442,15 @@ canvas {
   background: #c62839;
 }
 
+.inspector-hint {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+  font-size: 9px;
+  color: #999;
+  line-height: 1.4;
+}
+
 #editor-hint {
   position: absolute;
   bottom: 12px;
