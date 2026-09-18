@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { COLLISION_RADIUS, COLLISION_HEIGHT } from "../../Player.js";
+import { Teleporter } from "../../Teleporter.js";
 import {
   HOUSE_ORIGIN, HALF_W, HALF_D, FLOOR2_HEIGHT,
   FLIGHT_A_X0, FLIGHT_A_X1, FLIGHT_A_Z0, FLIGHT_A_Z1,
@@ -58,20 +59,6 @@ function collectCameraMeshes(group) {
   return meshes;
 }
 
-// --- Trigger zone ----------------------------------------------------------
-
-class Zone {
-  constructor(minX, maxX, minZ, maxZ) {
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minZ = minZ;
-    this.maxZ = maxZ;
-  }
-  contains(x, z) {
-    return x >= this.minX && x <= this.maxX && z >= this.minZ && z <= this.maxZ;
-  }
-}
-
 // --- Assembler -------------------------------------------------------------
 
 /**
@@ -121,24 +108,26 @@ export function setupPlayerHouse(scene, exteriorDoorWorldPos) {
     getPCInteractable(HOUSE_ORIGIN.x + HALF_W - 0.55, HOUSE_ORIGIN.z + HALF_D - 2.3, FLOOR2_HEIGHT),
   ];
 
-  // --- Door trigger zones (world space) ------------------------------------
-  const outsideDoorZone = new Zone(
-    exteriorDoorWorldPos.x - 1.0,
-    exteriorDoorWorldPos.x + 1.0,
-    exteriorDoorWorldPos.z - 0.5,
-    exteriorDoorWorldPos.z + 0.35
-  );
-  const insideExitZone = new Zone(
-    HOUSE_ORIGIN.x - 1.0,
-    HOUSE_ORIGIN.x + 1.0,
-    HOUSE_ORIGIN.z + HALF_D - 0.5,
-    HOUSE_ORIGIN.z + HALF_D + 0.2
-  );
+  // --- Teleporters for door transitions ------------------------------------
+  // Outside door → inside (near interior door)
+  const teleportToInside = new Teleporter({
+    from: { x: exteriorDoorWorldPos.x, z: exteriorDoorWorldPos.z + 0.8, radius: 1.0 },
+    to:   { x: HOUSE_ORIGIN.x, z: HOUSE_ORIGIN.z + HALF_D - 1.2 },
+    cooldown: 0.8,
+    color: 0x00e5ff,
+    showVisual: false,
+  });
 
-  const groundEntrySpawn = new THREE.Vector3(HOUSE_ORIGIN.x, 0, HOUSE_ORIGIN.z + HALF_D - 1.2);
-  const outsideSpawn = new THREE.Vector3(exteriorDoorWorldPos.x, 0, exteriorDoorWorldPos.z + 1.2);
+  // Inside door → outside (near exterior door)
+  const teleportToOutside = new Teleporter({
+    from: { x: HOUSE_ORIGIN.x, z: HOUSE_ORIGIN.z + HALF_D - 0.5, radius: 1.0 },
+    to:   { x: exteriorDoorWorldPos.x, z: exteriorDoorWorldPos.z + 1.5 },
+    cooldown: 0.8,
+    color: 0xff9100,
+    showVisual: false,
+  });
 
-  const TELEPORT_COOLDOWN = 0.6;
+  const TELEPORT_COOLDOWN = 0.8;
 
   const controller = {
     inside: false,
@@ -166,15 +155,12 @@ export function setupPlayerHouse(scene, exteriorDoorWorldPos) {
         this.cooldown -= delta;
         return;
       }
-      const { x, z } = player.position;
 
-      if (!this.inside && outsideDoorZone.contains(x, z)) {
-        player.position.set(groundEntrySpawn.x, 0, groundEntrySpawn.z);
+      if (!this.inside && teleportToInside.update(player, delta)) {
         this.inside = true;
         this.currentFloor = 0;
         this.cooldown = TELEPORT_COOLDOWN;
-      } else if (this.inside && this.currentFloor === 0 && insideExitZone.contains(x, z)) {
-        player.position.set(outsideSpawn.x, 0, outsideSpawn.z);
+      } else if (this.inside && this.currentFloor === 0 && teleportToOutside.update(player, delta)) {
         this.inside = false;
         this.cooldown = TELEPORT_COOLDOWN;
       }
