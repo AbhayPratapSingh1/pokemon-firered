@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { HOUSE_PART_BUILDERS } from "./HousePartBuilder.js";
 
 function withShadow(mesh) {
   mesh.castShadow = true;
@@ -14,7 +15,7 @@ export function createBoxPart({ size = { w: 1, h: 1, d: 1 }, color = 0xb08968 } 
   return withShadow(mesh);
 }
 
-/** Thin/tall box preset — geometrically identical to a box, kept as a distinct tool for clarity. */
+/** Thin/tall box preset. */
 export function createWallPart({ size = { w: 2, h: 1.5, d: 0.2 }, color = 0xd9c8a9 } = {}) {
   return createBoxPart({ size, color });
 }
@@ -40,7 +41,8 @@ export function createCylinderPart({ size = { radius: 0.5, height: 1.5 }, color 
   return withShadow(mesh);
 }
 
-const BUILDERS = {
+/** Primitive part builders (placed via the old palette). */
+const PRIMITIVE_BUILDERS = {
   box: createBoxPart,
   wall: createWallPart,
   roof: createRoofPart,
@@ -48,13 +50,26 @@ const BUILDERS = {
 };
 
 /**
- * Builds a mesh for one resolved (non-"ref") part record, applying its
- * position/rotationY/scale. The single entry point reused by the editor and
- * by the game-side ModelLoader. Does NOT tag userData — callers decide how
- * placed instances are identified/grouped.
+ * Builds a mesh (or group) for one resolved part record, applying its
+ * position/rotationY/scale. Supports both primitive types and house
+ * furniture types (house_tv, house_bed, etc.).
  */
 export function buildPartMesh(part) {
-  const builder = BUILDERS[part.type];
+  // House furniture parts return a THREE.Group
+  const houseBuilder = HOUSE_PART_BUILDERS[part.type];
+  if (houseBuilder) {
+    const group = houseBuilder();
+    group.position.x += part.position?.x ?? 0;
+    group.position.y += part.position?.y ?? 0;
+    group.position.z += part.position?.z ?? 0;
+    group.rotation.y += part.rotationY ?? 0;
+    const scale = part.scale ?? 1;
+    if (scale !== 1) group.scale.multiplyScalar(scale);
+    return group;
+  }
+
+  // Primitive parts return a single mesh
+  const builder = PRIMITIVE_BUILDERS[part.type];
   if (!builder) {
     throw new Error(`Unknown part type: ${part.type}`);
   }

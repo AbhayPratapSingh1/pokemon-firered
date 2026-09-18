@@ -66,10 +66,14 @@ function placePart(state, hit) {
   const id = `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
   const base = { id, position: { x, y, z }, rotationY: 0, scale: 1 };
 
-  const part =
-    state.armedTool.kind === "ref"
-      ? { ...base, type: "ref", refModelId: state.armedTool.refModelId }
-      : { ...base, type: state.armedTool.type, size: { ...state.armedTool.size }, color: state.armedTool.color };
+  let part;
+  if (state.armedTool.kind === "ref") {
+    part = { ...base, type: "ref", refModelId: state.armedTool.refModelId };
+  } else if (state.armedTool.kind === "house") {
+    part = { ...base, type: state.armedTool.type };
+  } else {
+    part = { ...base, type: state.armedTool.type, size: { ...state.armedTool.size }, color: state.armedTool.color };
+  }
 
   state.parts.push(part);
   addPartToScene(state, part);

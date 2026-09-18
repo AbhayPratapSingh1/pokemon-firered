@@ -152,7 +152,13 @@ export function initInspector(state) {
 
     const title = document.createElement("div");
     title.className = "inspector-title";
-    title.textContent = part.type === "ref" ? "Reference part" : `${part.type} part`;
+    if (part.type === "ref") {
+      title.textContent = "Reference part";
+    } else if (part.type.startsWith("house_")) {
+      title.textContent = part.type.replace("house_", "").replace(/_/g, " ");
+    } else {
+      title.textContent = `${part.type} part`;
+    }
     body.appendChild(title);
 
     const sectionLabel = (text) => {
@@ -186,12 +192,14 @@ export function initInspector(state) {
       onChange: (v) => { part.scale = v; rebuildPart(part); },
     });
 
-    if (part.type !== "ref") {
-      for (const [field, label] of SIZE_FIELDS[part.type]) {
-        addNumberField({
-          label, value: part.size[field], step: SIZE_STEP, min: MIN_SIZE,
-          onChange: (v) => { part.size[field] = v; rebuildPart(part); },
-        });
+    if (part.type !== "ref" && !part.type.startsWith("house_")) {
+      if (SIZE_FIELDS[part.type]) {
+        for (const [field, label] of SIZE_FIELDS[part.type]) {
+          addNumberField({
+            label, value: part.size[field], step: SIZE_STEP, min: MIN_SIZE,
+            onChange: (v) => { part.size[field] = v; rebuildPart(part); },
+          });
+        }
       }
 
       sectionLabel("Appearance");

@@ -1,5 +1,6 @@
 import * as ModelStore from "./ModelStore.js";
 import { addPartToScene } from "./EditorPlacement.js";
+import { HOUSE_PART_DEFS } from "./HousePartBuilder.js";
 
 const TOOL_DEFS = [
   { type: "box", label: "Box", defaultSize: { w: 1, h: 1, d: 1 }, sizeFields: ["w", "h", "d"], defaultColor: "#b08968" },
@@ -37,6 +38,12 @@ function renderToolList(state) {
   const clearArmedHighlight = () => {
     container.querySelectorAll(".tool-card.armed").forEach((el) => el.classList.remove("armed"));
   };
+
+  // --- Primitive tools section ---
+  const primTitle = document.createElement("div");
+  primTitle.className = "inspector-section";
+  primTitle.textContent = "Primitives";
+  container.appendChild(primTitle);
 
   for (const def of TOOL_DEFS) {
     const card = document.createElement("div");
@@ -80,6 +87,40 @@ function renderToolList(state) {
       const size = {};
       for (const field of def.sizeFields) size[field] = parseFloat(sizeInputs[field].value) || 0.1;
       state.armedTool = { kind: "primitive", type: def.type, size, color: hexToInt(colorInput.value) };
+      card.classList.add("armed");
+    });
+    card.appendChild(armBtn);
+
+    container.appendChild(card);
+  }
+
+  // --- House furniture section ---
+  const furnTitle = document.createElement("div");
+  furnTitle.className = "inspector-section";
+  furnTitle.style.marginTop = "12px";
+  furnTitle.textContent = "House Parts";
+  container.appendChild(furnTitle);
+
+  for (const def of HOUSE_PART_DEFS) {
+    const card = document.createElement("div");
+    card.className = "tool-card";
+
+    const title = document.createElement("div");
+    title.className = "tool-card-title";
+    title.textContent = def.label;
+    card.appendChild(title);
+
+    const armBtn = document.createElement("button");
+    armBtn.type = "button";
+    armBtn.textContent = "Place";
+    armBtn.addEventListener("click", () => {
+      const wasArmed = state.armedTool?.kind === "house" && state.armedTool.type === def.type;
+      clearArmedHighlight();
+      if (wasArmed) {
+        state.armedTool = null;
+        return;
+      }
+      state.armedTool = { kind: "house", type: def.type };
       card.classList.add("armed");
     });
     card.appendChild(armBtn);
