@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Builder</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="editor-root">
+    <div id="editor-toolbar">
+      <div id="editor-title">MODEL BUILDER</div>
+      <div id="editor-toolbar-actions">
+        <button id="btn-new" type="button">New</button>
+        <button id="btn-save" type="button">Save As Model</button>
+        <button id="btn-export" type="button">Export</button>
+        <label id="btn-import" for="import-file">Import</label>
+        <input type="file" id="import-file" accept="application/json" hidden />
+        <a id="back-link" href="index.html">&#9664; Play</a>
+      </div>
+    </div>
+    <div id="editor-sidebar">
+      <h3>Parts</h3>
+      <div id="tool-list"></div>
+      <h3>Saved Models</h3>
+      <div id="saved-models-list"></div>
+    </div>
+    <div id="editor-inspector" class="hidden">
+      <h3>Selected Part</h3>
+      <div id="inspector-body"></div>
+      <button id="btn-delete-part" type="button">Delete</button>
+    </div>
+    <div id="editor-hint">Pick a tool, then click the grid to place it. Click empty ground with no tool selected to deselect.</div>
+  </div>
+  <script type="module" src="src/EditorApp.js"></script>
+</body>
+</html>

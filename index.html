@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Ground</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="hud">
+    <div id="title">OPEN GROUND</div>
+    <div id="help">
+      WASD / Arrow Keys - Move<br />
+      Mouse - Look<br />
+      Space - Jump<br />
+      Shift - Sprint<br />
+      E - Interact
+    </div>
+    <div id="click-prompt">Click to play</div>
+    <div id="crosshair"></div>
+    <div id="model-error" class="hidden"></div>
+    <div id="interact-prompt" class="hidden"></div>
+    <div id="interact-message" class="hidden"></div>
+    <pre id="debug-stair"></pre>
+    <a id="nav-link" href="editor.html">Build &#9654;</a>
+  </div>
+  <script type="module" src="src/main.js?v=7"></script>
+</body>
+</html>
