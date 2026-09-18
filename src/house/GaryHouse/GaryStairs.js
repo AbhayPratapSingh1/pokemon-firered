@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { makeBox, at, addShadow } from "../shared.js";
+import { makeBox, at, addShadow } from "../../components/shared.js";
 import {
   WALL_THICK, PARAPET_HEIGHT,
   FLIGHT_A_STEPS, FLIGHT_A_RISE, FLIGHT_A_X0, FLIGHT_A_X1, FLIGHT_A_Z0, FLIGHT_A_Z1, STEP_DEPTH_A,
@@ -7,7 +7,7 @@ import {
   LANDING_X0, LANDING_X1, LANDING_Z0, LANDING_Z1,
   STAIR_WIDTH, STEP_HEIGHT, FLOOR2_HEIGHT,
 } from "./constants.js";
-import { STAIRS_CONFIG } from "../Stairs/config.js";
+import { STAIRS_CONFIG } from "../../components/Stairs/config.js";
 
 /**
  * Mirrored L-shaped staircase for Gary's House.
