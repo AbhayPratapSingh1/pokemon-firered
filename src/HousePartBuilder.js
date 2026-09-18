@@ -11,6 +11,13 @@ import { buildTree } from "./components/Tree/Tree.js";
 import { buildBanner } from "./components/Banner/Banner.js";
 import { buildShelter } from "./components/Shelter/Shelter.js";
 import { buildWater } from "./components/Water/Water.js";
+import { buildTable } from "./components/Table/Table.js";
+import { buildPokeball } from "./components/Pokeball/Pokeball.js";
+import { buildChimney } from "./components/Chimney/Chimney.js";
+import { buildMailbox } from "./components/Mailbox/Mailbox.js";
+import { buildSign } from "./components/Sign/Sign.js";
+import { buildWindowBox } from "./components/WindowBox/WindowBox.js";
+import { buildFence } from "./components/Fence/Fence.js";
 
 /**
  * Wraps each house component into a THREE.Group so it can be placed as a
@@ -76,6 +83,40 @@ export function createWaterPart() {
   return wrapBuilder(buildWater);
 }
 
+// --- Table & Pokeball builders -----------------------------------------------
+
+export function createTablePart() {
+  return wrapBuilder(buildTable);
+}
+
+export function createPokeballPart() {
+  return wrapBuilder(buildPokeball);
+}
+
+// --- Outdoor / structure builders --------------------------------------------
+
+export function createChimneyPart() {
+  return wrapBuilder(buildChimney);
+}
+
+export function createMailboxPart() {
+  return wrapBuilder(buildMailbox);
+}
+
+export function createSignPart() {
+  return wrapBuilder(buildSign);
+}
+
+export function createWindowBoxPart() {
+  return wrapBuilder(buildWindowBox);
+}
+
+export function createFencePart() {
+  const group = new THREE.Group();
+  buildFence(group, 0, 0, 0, 3);
+  return group;
+}
+
 /**
  * Registry of house part builders, keyed by type name.
  * Each entry is a function that returns a THREE.Group.
@@ -89,12 +130,20 @@ export const HOUSE_PART_BUILDERS = {
   house_sink: createSinkPart,
   house_bed: createBedPart,
   house_computer_desk: createComputerDeskPart,
+  house_table: createTablePart,
+  house_pokeball: createPokeballPart,
   // Nature / outdoor
   house_grass: createGrassPart,
   house_tree: createTreePart,
   house_banner: createBannerPart,
   house_shelter: createShelterPart,
   house_water: createWaterPart,
+  // Structure / decor
+  house_chimney: createChimneyPart,
+  house_mailbox: createMailboxPart,
+  house_sign: createSignPart,
+  house_window_box: createWindowBoxPart,
+  house_fence: createFencePart,
 };
 
 /**
@@ -109,10 +158,18 @@ export const HOUSE_PART_DEFS = [
   { type: "house_sink", label: "Sink", category: "Furniture" },
   { type: "house_bed", label: "Bed", category: "Furniture" },
   { type: "house_computer_desk", label: "PC Desk", category: "Furniture" },
+  { type: "house_table", label: "Table", category: "Furniture" },
+  { type: "house_pokeball", label: "Pokeball", category: "Furniture" },
   // Nature / outdoor
   { type: "house_grass", label: "Grass", category: "Nature" },
   { type: "house_tree", label: "Tree", category: "Nature" },
+  { type: "house_water", label: "Water", category: "Nature" },
+  // Structure / decor
   { type: "house_banner", label: "Banner", category: "Structure" },
   { type: "house_shelter", label: "Shelter", category: "Structure" },
-  { type: "house_water", label: "Water", category: "Nature" },
+  { type: "house_chimney", label: "Chimney", category: "Structure" },
+  { type: "house_mailbox", label: "Mailbox", category: "Structure" },
+  { type: "house_sign", label: "Sign", category: "Structure" },
+  { type: "house_window_box", label: "Window Box", category: "Structure" },
+  { type: "house_fence", label: "Fence", category: "Structure" },
 ];

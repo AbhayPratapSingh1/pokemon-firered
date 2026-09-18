@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { addShadow } from "../utils.js";
 import { OAK_LAB_CONFIG } from "./config.js";
 import { buildSign } from "../../components/Sign/Sign.js";
+import { buildTable } from "../../components/Table/Table.js";
+import { buildPokeball } from "../../components/Pokeball/Pokeball.js";
 
 /**
  * Oak's Lab — a larger rectangular research building with a flat overhanging
@@ -78,6 +80,12 @@ export function createOakLab({
 
   // Sign out front
   buildSign(g, 0, depth / 2 + 2.5, 0);
+
+  // Table with 3 pokeballs inside the lab (visible through door)
+  buildTable(g, 0, depth / 2 - 1.5, 0);
+  buildPokeball(g, -0.35, depth / 2 - 1.5, 0.75);
+  buildPokeball(g, 0, depth / 2 - 1.5, 0.75);
+  buildPokeball(g, 0.35, depth / 2 - 1.5, 0.75);
 
   return g;
 }
