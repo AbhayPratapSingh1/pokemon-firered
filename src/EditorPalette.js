@@ -94,38 +94,46 @@ function renderToolList(state) {
     container.appendChild(card);
   }
 
-  // --- House furniture section ---
-  const furnTitle = document.createElement("div");
-  furnTitle.className = "inspector-section";
-  furnTitle.style.marginTop = "12px";
-  furnTitle.textContent = "House Parts";
-  container.appendChild(furnTitle);
-
+  // --- House parts section (grouped by category) ---
+  const categories = {};
   for (const def of HOUSE_PART_DEFS) {
-    const card = document.createElement("div");
-    card.className = "tool-card";
+    if (!categories[def.category]) categories[def.category] = [];
+    categories[def.category].push(def);
+  }
 
-    const title = document.createElement("div");
-    title.className = "tool-card-title";
-    title.textContent = def.label;
-    card.appendChild(title);
+  for (const [catName, catDefs] of Object.entries(categories)) {
+    const catTitle = document.createElement("div");
+    catTitle.className = "inspector-section";
+    catTitle.style.marginTop = "12px";
+    catTitle.textContent = catName;
+    container.appendChild(catTitle);
 
-    const armBtn = document.createElement("button");
-    armBtn.type = "button";
-    armBtn.textContent = "Place";
-    armBtn.addEventListener("click", () => {
-      const wasArmed = state.armedTool?.kind === "house" && state.armedTool.type === def.type;
-      clearArmedHighlight();
-      if (wasArmed) {
-        state.armedTool = null;
-        return;
-      }
-      state.armedTool = { kind: "house", type: def.type };
-      card.classList.add("armed");
-    });
-    card.appendChild(armBtn);
+    for (const def of catDefs) {
+      const card = document.createElement("div");
+      card.className = "tool-card";
 
-    container.appendChild(card);
+      const title = document.createElement("div");
+      title.className = "tool-card-title";
+      title.textContent = def.label;
+      card.appendChild(title);
+
+      const armBtn = document.createElement("button");
+      armBtn.type = "button";
+      armBtn.textContent = "Place";
+      armBtn.addEventListener("click", () => {
+        const wasArmed = state.armedTool?.kind === "house" && state.armedTool.type === def.type;
+        clearArmedHighlight();
+        if (wasArmed) {
+          state.armedTool = null;
+          return;
+        }
+        state.armedTool = { kind: "house", type: def.type };
+        card.classList.add("armed");
+      });
+      card.appendChild(armBtn);
+
+      container.appendChild(card);
+    }
   }
 }
 
