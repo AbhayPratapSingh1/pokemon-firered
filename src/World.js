@@ -145,6 +145,34 @@ function buildPlayersHouseObstacles(house) {
   ];
 }
 
+/**
+ * Generic door-notch collision for a building facing +Z (south).
+ * Creates 3 boxes: west wall, east wall, and middle strip with door gap.
+ */
+function buildDoorNotchObstacles(mesh, position, width, depth, totalHeight, doorHalfWidth = 0.7, notchDepth = 0.6) {
+  const { x: px, z: pz } = position;
+  const halfW = width / 2;
+  const halfD = depth / 2;
+
+  return [
+    // West wall
+    { mesh, box: new THREE.Box3(
+      new THREE.Vector3(px - halfW, 0, pz - halfD),
+      new THREE.Vector3(px - doorHalfWidth, totalHeight, pz + halfD)
+    )},
+    // East wall
+    { mesh, box: new THREE.Box3(
+      new THREE.Vector3(px + doorHalfWidth, 0, pz - halfD),
+      new THREE.Vector3(px + halfW, totalHeight, pz + halfD)
+    )},
+    // Middle (with door notch cut from south face)
+    { mesh, box: new THREE.Box3(
+      new THREE.Vector3(px - doorHalfWidth, 0, pz - halfD),
+      new THREE.Vector3(px + doorHalfWidth, totalHeight, pz + halfD - notchDepth)
+    )},
+  ];
+}
+
 function createTownLayout(scene) {
   const obstacles = [];
 
@@ -168,7 +196,11 @@ function createTownLayout(scene) {
     rotationY: 0,
   });
   scene.add(neighborsHouse);
-  obstacles.push({ mesh: neighborsHouse, box: new THREE.Box3().setFromObject(neighborsHouse) });
+  obstacles.push(...buildDoorNotchObstacles(
+    neighborsHouse,
+    new THREE.Vector3(14, 0, -14),
+    6, 6, 5.2, 0.7, 0.6
+  ));
 
   // Oak's lab (new component: sign, windows, flat roof)
   const lab = createOakLab({
@@ -176,7 +208,11 @@ function createTownLayout(scene) {
     rotationY: Math.PI,
   });
   scene.add(lab);
-  obstacles.push({ mesh: lab, box: new THREE.Box3().setFromObject(lab) });
+  obstacles.push(...buildDoorNotchObstacles(
+    lab,
+    new THREE.Vector3(0, 0, 16),
+    10, 8, 3.55, 0.7, 0.6
+  ));
 
   // Paths connecting the spawn clearing to each building's door.
   const spawn = new THREE.Vector3(0, 0, 0);
