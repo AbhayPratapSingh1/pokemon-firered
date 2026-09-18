@@ -281,7 +281,7 @@ function createTownLayout(scene) {
   placeDemoSavedModel(scene, obstacles);
 
   // --- Interior controllers (teleporter-based) ---
-  const garyHouseController = setupGaryHouseInterior(
+  const garyHouseController = setupGaryHouse(
     scene,
     new THREE.Vector3(14, 0, -14 + 3)  // Gary's door at +Z face
   );
