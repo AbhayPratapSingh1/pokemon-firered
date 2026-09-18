@@ -1,0 +1,15 @@
+export const OAK_LAB_CONFIG = {
+  width: 12,
+  depth: 8,
+  wallHeight: 3.5,
+  wallColor: 0xf1f1f1,
+  trimColor: 0xd62828,
+  doorColor: 0x2b2b2b,
+  doorWidth: 1.6,
+  doorHeight: 2.2,
+  windowColor: 0xa9d6e5,
+  windowWidth: 1.1,
+  windowHeight: 1.0,
+  roofThickness: 0.4,
+  signText: "OAK'S LAB",
+};

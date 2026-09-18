@@ -1,5 +1,8 @@
 import * as THREE from "three";
-import { createHouse, createLab, createTree, createFenceSegment, createSignpost } from "./Buildings.js";
+import { createHouse } from "./Buildings.js";
+import { createOakLab } from "./buildings/OakLab/OakLab.js";
+import { createGaryHouse } from "./buildings/GaryHouse/GaryHouse.js";
+import { buildTree } from "./components/Tree/Tree.js";
 import { listModels } from "./ModelStore.js";
 import { buildModelGroup } from "./ModelLoader.js";
 
@@ -66,16 +69,19 @@ function scatterTrees(scene, obstacles, exclusionZones) {
       attempts++;
     } while (isInsideExclusionZone(x, z, exclusionZones) && attempts < 20);
 
-    const tree = createTree({ position: new THREE.Vector3(x, 0, z) });
-    scene.add(tree);
+    // Build tree using new Tree component (wraps in its own group)
+    const treeGroup = new THREE.Group();
+    treeGroup.position.set(x, 0, z);
+    buildTree(treeGroup, 0, 0, 0);
+    scene.add(treeGroup);
 
     // Collide with the trunk only, not the canopy, so players can walk under trees.
     const trunkRadius = 0.25;
     const box = new THREE.Box3(
       new THREE.Vector3(x - trunkRadius, 0, z - trunkRadius),
-      new THREE.Vector3(x + trunkRadius, 1.2, z + trunkRadius)
+      new THREE.Vector3(x + trunkRadius, 1.5, z + trunkRadius)
     );
-    obstacles.push({ mesh: tree, box });
+    obstacles.push({ mesh: treeGroup, box });
   }
 }
 
@@ -142,6 +148,7 @@ function buildPlayersHouseObstacles(house) {
 function createTownLayout(scene) {
   const obstacles = [];
 
+  // Player's house (keeps special door notch collision from Buildings.js)
   const playersHouse = createHouse({
     position: PLAYERS_HOUSE_POSITION,
     rotationY: 0,
@@ -155,16 +162,16 @@ function createTownLayout(scene) {
   scene.add(playersHouse);
   obstacles.push(...buildPlayersHouseObstacles(playersHouse));
 
-  const neighborsHouse = createHouse({
+  // Gary's house (new component: chimney, mailbox, fence)
+  const neighborsHouse = createGaryHouse({
     position: new THREE.Vector3(14, 0, -14),
     rotationY: 0,
-    wallColor: 0xe8e2d6,
-    roofColor: 0x2a9d8f,
   });
   scene.add(neighborsHouse);
   obstacles.push({ mesh: neighborsHouse, box: new THREE.Box3().setFromObject(neighborsHouse) });
 
-  const lab = createLab({
+  // Oak's lab (new component: sign, windows, flat roof)
+  const lab = createOakLab({
     position: new THREE.Vector3(0, 0, 16),
     rotationY: Math.PI,
   });
@@ -177,22 +184,12 @@ function createTownLayout(scene) {
   addPathSegment(scene, spawn, new THREE.Vector3(14, 0, -10));
   addPathSegment(scene, spawn, new THREE.Vector3(0, 0, 11));
 
-  // Short fence runs flanking each house yard (path-facing side left open).
-  scene.add(createFenceSegment({ position: new THREE.Vector3(-17.5, 0, -10.5), length: 3, rotationY: Math.PI / 2 }));
-  scene.add(createFenceSegment({ position: new THREE.Vector3(-10.5, 0, -10.5), length: 3, rotationY: Math.PI / 2 }));
-  scene.add(createFenceSegment({ position: new THREE.Vector3(10.5, 0, -10.5), length: 3, rotationY: Math.PI / 2 }));
-  scene.add(createFenceSegment({ position: new THREE.Vector3(17.5, 0, -10.5), length: 3, rotationY: Math.PI / 2 }));
-
-  scene.add(createSignpost({ position: new THREE.Vector3(3, 0, 10.5), rotationY: Math.PI / 6 }));
-
-  addPond(scene, new THREE.Vector3(32, 0, -30), 5);
-
   // Keep spawn, buildings, and paths clear of randomly-scattered trees.
   const exclusionZones = [
     { x: 0, z: 0, halfW: 8, halfD: 8 },
     { x: -14, z: -14, halfW: 7, halfD: 7 },
-    { x: 14, z: -14, halfW: 7, halfD: 7 },
-    { x: 0, z: 16, halfW: 9, halfD: 7 },
+    { x: 14, z: -14, halfW: 8, halfD: 8 },
+    { x: 0, z: 16, halfW: 10, halfD: 8 },
     { x: 24, z: 6, halfW: 6, halfD: 6 },
   ];
   scatterTrees(scene, obstacles, exclusionZones);

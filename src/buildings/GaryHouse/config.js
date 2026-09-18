@@ -1,0 +1,17 @@
+export const GARY_HOUSE_CONFIG = {
+  width: 6,
+  depth: 6,
+  wallHeight: 3,
+  roofHeight: 2.2,
+  wallColor: 0xe8e2d6,
+  roofColor: 0x2a9d8f,
+  doorColor: 0x3d2b1f,
+  doorWidth: 1.1,
+  doorHeight: 1.8,
+  windowColor: 0xa9d6e5,
+  windowWidth: 0.8,
+  windowHeight: 0.8,
+  hasChimney: true,
+  hasMailbox: true,
+  hasFence: true,
+};
