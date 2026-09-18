@@ -1,9 +1,8 @@
 import * as THREE from "three";
-import { createWorld, PLAYERS_HOUSE_DOOR_POSITION } from "./World.js";
+import { createWorld } from "./World.js";
 import { Player } from "./Player.js";
 import { InputManager } from "./Input.js";
 import { CameraController } from "./CameraController.js";
-import { setupPlayerHouse } from "./PlayerHouseInterior.js";
 import { InteractionManager } from "./InteractionManager.js";
 
 // --- Renderer ---
@@ -51,17 +50,12 @@ const outdoorCollisionMeshes = [...new Set(world.obstacles.map((o) => o.mesh))];
 // --- Player ---
 const player = new Player(scene, new THREE.Vector3(0, 0, 0));
 
-// --- Player's house interior (FireRed-style recreation) ---
-const playerHouse = setupPlayerHouse(scene, PLAYERS_HOUSE_DOOR_POSITION);
-
-// --- Gary's House interior (mirror of Ash's House) ---
-const garyHouse = world.garyHouseController;
-
-// --- Oak's Lab interior ---
-const oakLab = world.oakLabController;
-
-// All interior controllers for easy iteration
-const interiorControllers = [playerHouse, garyHouse, oakLab];
+// --- Interior controllers (all use Ash's House layout) ---
+const interiors = [
+  world.playerHouse,
+  world.garyHouseInterior,
+  world.oakLabInterior,
+];
 
 // --- Input & Camera controller ---
 const input = new InputManager(renderer.domElement);
@@ -81,41 +75,38 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
 
-  const delta = Math.min(clock.getDelta(), 0.1); // clamp to avoid huge steps on tab-switch
+  const delta = Math.min(clock.getDelta(), 0.1);
 
   input.update();
 
   // Update all interior controllers
-  for (const ctrl of interiorControllers) {
+  for (const ctrl of interiors) {
     ctrl.update(delta, player);
   }
 
-  // Merge obstacles from all controllers
-  const allObstacles = interiorControllers.reduce(
-    (acc, ctrl) => acc.concat(ctrl.getObstacles(world.obstacles)),
-    []
-  );
-  const allCollisionMeshes = interiorControllers.reduce(
-    (acc, ctrl) => acc.concat(ctrl.getCollisionMeshes(outdoorCollisionMeshes)),
-    []
-  );
+  // Find which interior the player is in (if any)
+  const activeInterior = interiors.find((c) => c.inside) || interiors[0];
+
+  // Merge obstacles from active interior
+  const allObstacles = activeInterior.getObstacles(world.obstacles);
+  const allCollisionMeshes = activeInterior.getCollisionMeshes(outdoorCollisionMeshes);
 
   player.update(
     delta,
     input,
     cameraController.yaw,
     allObstacles,
-    playerHouse.getGroundHeight
+    activeInterior.getGroundHeight
   );
   cameraController.update(delta, input, player, allCollisionMeshes);
 
   // Gather interactables from all interiors
-  const allInteractables = interiorControllers.flatMap((c) => c.interactables || []);
+  const allInteractables = interiors.flatMap((c) => c.interactables || []);
   interaction.update(delta, input, player, allInteractables);
 
   // Debug HUD
   const debugEl = document.getElementById("debug-stair");
-  if (debugEl) debugEl.textContent = playerHouse.getDebugInfo(player);
+  if (debugEl) debugEl.textContent = activeInterior.getDebugInfo(player);
 
   renderer.render(scene, camera);
 }
