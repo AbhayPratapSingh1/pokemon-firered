@@ -146,30 +146,76 @@ function buildPlayersHouseObstacles(house) {
 }
 
 /**
- * Generic door-notch collision for a building facing +Z (south).
- * Creates 3 boxes: west wall, east wall, and middle strip with door gap.
+ * Generic door-notch collision for a building.
+ * Creates 3 boxes: two side walls and a middle strip with door gap.
+ * Supports rotation via rotationY (radians).
  */
-function buildDoorNotchObstacles(mesh, position, width, depth, totalHeight, doorHalfWidth = 0.7, notchDepth = 0.6) {
+function buildDoorNotchObstacles(mesh, position, width, depth, totalHeight, rotationY = 0, doorHalfWidth = 0.7) {
   const { x: px, z: pz } = position;
   const halfW = width / 2;
   const halfD = depth / 2;
 
+  // Door is always on the +Z (south) face in local space.
+  // After rotation, we need world-space collision boxes.
+  const cos = Math.cos(rotationY);
+  const sin = Math.sin(rotationY);
+
+  // Local-space corner offsets from center (south face = +Z)
+  // West wall: x from -halfW to -doorHalfWidth, z from -halfD to +halfD
+  // East wall: x from +doorHalfWidth to +halfW, z from -halfD to +halfD
+  // Middle:   x from -doorHalfWidth to +doorHalfWidth, z from -halfD to 0 (only back half, door open in front)
+
+  function localToWorld(lx, ly, lz) {
+    return new THREE.Vector3(
+      px + lx * cos - lz * sin,
+      ly,
+      pz + lx * sin + lz * cos
+    );
+  }
+
+  // For a 180° rotation (cos=-1, sin=0), local +Z becomes world -Z.
+  // The door gap must be on the correct face.
+  // We build collision in local space, then rotate the corners to world space.
+
+  // Back wall (away from door): z = -halfD in local
+  // Front wall (door side): z = +halfD in local
+
+  // Middle box covers the full depth MINUS the door opening depth.
+  // Door opening extends from the front face inward by ~1m.
+  const doorDepth = 1.2;
+
+  // West wall (full depth)
+  const westMin = localToWorld(-halfW, 0, -halfD);
+  const westMax = localToWorld(-doorHalfWidth, totalHeight, halfD);
+
+  // East wall (full depth)
+  const eastMin = localToWorld(doorHalfWidth, 0, -halfD);
+  const eastMax = localToWorld(halfW, totalHeight, halfD);
+
+  // Middle (back portion only — door gap is at front/+Z face)
+  const midMin = localToWorld(-doorHalfWidth, 0, -halfD);
+  const midMax = localToWorld(doorHalfWidth, totalHeight, halfD - doorDepth);
+
+  // Ensure min < max for each box (rotation can flip axes)
+  function fixBox(min, max) {
+    return new THREE.Box3(
+      new THREE.Vector3(
+        Math.min(min.x, max.x),
+        Math.min(min.y, max.y),
+        Math.min(min.z, max.z)
+      ),
+      new THREE.Vector3(
+        Math.max(min.x, max.x),
+        Math.max(min.y, max.y),
+        Math.max(min.z, max.z)
+      )
+    );
+  }
+
   return [
-    // West wall
-    { mesh, box: new THREE.Box3(
-      new THREE.Vector3(px - halfW, 0, pz - halfD),
-      new THREE.Vector3(px - doorHalfWidth, totalHeight, pz + halfD)
-    )},
-    // East wall
-    { mesh, box: new THREE.Box3(
-      new THREE.Vector3(px + doorHalfWidth, 0, pz - halfD),
-      new THREE.Vector3(px + halfW, totalHeight, pz + halfD)
-    )},
-    // Middle (with door notch cut from south face)
-    { mesh, box: new THREE.Box3(
-      new THREE.Vector3(px - doorHalfWidth, 0, pz - halfD),
-      new THREE.Vector3(px + doorHalfWidth, totalHeight, pz + halfD - notchDepth)
-    )},
+    { mesh, box: fixBox(westMin, westMax) },
+    { mesh, box: fixBox(eastMin, eastMax) },
+    { mesh, box: fixBox(midMin, midMax) },
   ];
 }
 
@@ -199,7 +245,7 @@ function createTownLayout(scene) {
   obstacles.push(...buildDoorNotchObstacles(
     neighborsHouse,
     new THREE.Vector3(14, 0, -14),
-    6, 6, 5.2, 0.7, 0.6
+    6, 6, 5.2, 0, 0.7
   ));
 
   // Oak's lab (new component: sign, windows, flat roof)
@@ -211,7 +257,7 @@ function createTownLayout(scene) {
   obstacles.push(...buildDoorNotchObstacles(
     lab,
     new THREE.Vector3(0, 0, 16),
-    10, 8, 3.55, 0.7, 0.6
+    10, 8, 3.55, Math.PI, 0.7
   ));
 
   // Paths connecting the spawn clearing to each building's door.
