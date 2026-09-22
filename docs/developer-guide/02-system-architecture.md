@@ -10,16 +10,19 @@ Level 0: System
 │   └── editor.html + EditorApp.js (Editor Mode)
 │
 ├── Level 2: Subsystems
-│   ├── Rendering (Three.js scene, renderer, camera, lights)
-│   ├── Game Logic (player, world, collision, interaction)
+│   ├── Engine (Space, SpaceManager, Teleporter)
+│   ├── Config (objTypes, colors, actions, spaces, world, houses)
+│   ├── Game Logic (player, world builders, collision, interaction)
+│   ├── House Data (AshHouse, GaryHouse, OakLab configs)
+│   ├── Components (28 THREE.js object builders)
 │   ├── Editor Logic (palette, placement, inspector, camera pan)
-│   └── Data Layer (ModelStore, ModelLoader, PartKit)
+│   └── Data Layer (ModelStore, PartKit, HousePartBuilder)
 │
-├── Level 3: Modules (src/*.js)
+├── Level 3: Modules (src/*.js, src/config/*, src/engine/*, src/house/*)
 │   └── Each file is a self-contained module
 │
 └── Level 4: Classes / Functions
-    └── Player, InputManager, CameraController, etc.
+    └── Player, InputManager, CameraController, Space, Teleporter, etc.
 ```
 
 ## System Diagram
@@ -36,6 +39,9 @@ Level 0: System
 │           │                           │                   │
 │  ┌────────▼─────────┐       ┌────────▼─────────┐        │
 │  │   main.js         │       │   EditorApp.js    │        │
+│  │   - game loop     │       │   - render loop   │        │
+│  │   - interaction   │       │   - editor UI     │        │
+│  │   - HUD           │       │                   │        │
 │  └────────┬─────────┘       └────────┬─────────┘        │
 │           │                           │                   │
 │  ┌────────▼──────────────────────────▼──────────┐       │
@@ -43,8 +49,20 @@ Level 0: System
 │  └────────────────────────┬─────────────────────┘       │
 │                           │                              │
 │  ┌────────────────────────▼─────────────────────┐       │
-│  │              Shared Modules                   │       │
-│  │  PartKit.js  ModelStore.js  ModelLoader.js    │       │
+│  │              Engine Layer                     │       │
+│  │  Space.js  SpaceManager.js  Teleporter.js    │       │
+│  └────────────────────────┬─────────────────────┘       │
+│                           │                              │
+│  ┌────────────────────────▼─────────────────────┐       │
+│  │              Config Layer                     │       │
+│  │  objTypes  colors  actions  spaces  world     │       │
+│  │  houses (imports house configs)               │       │
+│  └────────────────────────┬─────────────────────┘       │
+│                           │                              │
+│  ┌────────────────────────▼─────────────────────┐       │
+│  │              House Data                       │       │
+│  │  AshHouse/  GaryHouse/  OakLab/               │       │
+│  │  (config.js + constants.js each)              │       │
 │  └──────────────────────────────────────────────┘       │
 │                                                          │
 ├─────────────────────────────────────────────────────────┤
@@ -56,8 +74,10 @@ Level 0: System
 ## Key Architectural Decisions
 
 1. **No bundler** — ES modules loaded via browser import maps pointing to unpkg CDN
-2. **Shared state object** — Editor modules communicate via a mutable `state` object
-3. **Factory functions over classes** — Most geometry is created via functions (`createHouse`, `createTree`, etc.)
-4. **Stateless collision** — `resolveCollisions()` is pure; can be swapped for a physics engine
-5. **localStorage for persistence** — No server, no database; models live in the browser
-6. **Remote interior** — Player's house interior is placed at `(300, 0, 300)` to avoid overlapping the outdoor town
+2. **Config-driven houses** — Houses are data (config.js), not code; new houses require only a config file
+3. **BUILDERS registry** — World.js maps OBJ type strings to builder functions; new objects need only a builder + config entry
+4. **Recursive Space system** — Spaces have exterior/interior/children; SpaceManager swaps scene context
+5. **Stateless collision** — `resolveCollisions()` is pure; can be swapped for a physics engine
+6. **Remote interiors** — House interiors are placed at offset positions (300,0,300 / 400,0,300 / 500,0,300) to avoid overlapping the outdoor town
+7. **Rectangular teleporter triggers** — Thin door-width zones placed outside thresholds prevent entry/exit loops
+8. **Interactable pattern** — Any object with an `action` property is auto-collected as interactable

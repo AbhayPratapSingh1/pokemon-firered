@@ -1,61 +1,117 @@
-# Player House Teleport Flow
+# House Teleport Flow
 
-## Trigger
+## Overview
 
-Player walks into the door trigger zone.
+Houses use the Teleporter system (`src/engine/Teleporter.js`) with rectangular trigger zones placed near doors.
 
-## Entry Flow
+## Entry Flow (World → House)
 
 ```
-Player position enters outsideDoorZone
+Player walks near door trigger zone in WORLD
     │
     ▼
-PlayerHouseInterior.controller.update(delta, player)
+main.js game loop:
     │
-    ├── cooldown > 0? → return (prevent re-teleport)
+    ├── teleportCooldown > 0? → skip
     │
-    ├── !inside && outsideDoorZone.contains(x, z)?
-    │   ├── player.position.set(groundEntrySpawn)
-    │   │   └── (HOUSE_ORIGIN.x, 0, HOUSE_ORIGIN.z + HALF_D - 1.2)
-    │   ├── inside = true
-    │   ├── currentFloor = 0
-    │   └── cooldown = 0.6s
+    ├── for each teleporter in allTeleporters:
+    │     distance(player, tp.entry.triggerPosition) < tp.entry.radius?
     │
-    └── Subsequent frames use interior systems:
-        ├── getObstacles() → interiorObstacles
-        ├── getCollisionMeshes() → interiorCollisionMeshes
-        └── getGroundHeight() → interior heights
+    ├── Found match:
+    │     ├── handleTeleport(tp.config.targetSpace, tp.config.spawnPosition, tp.config.spawnOrientation)
+    │     │     ├── targetSpace = SPACE_LOOKUP[targetSpaceName]
+    │     │     ├── spaceManager.clear()           // remove world objects
+    │     │     ├── spaceManager.load(targetSpace)  // add house interior
+    │     │     ├── player.position = spawnPos
+    │     │     ├── player.velocity = (0,0,0)
+    │     │     ├── player.facingAngle = orientation
+    │     │     ├── snap to ground height
+    │     │     ├── teleportCooldown = 1.0
+    │     │     └── inputLockTimer = 0.2
+    │     └── break
 ```
 
-## Exit Flow
+## Exit Flow (House → World)
 
 ```
-Player position enters insideExitZone (ground floor, near door)
+Player walks near exit trigger zone inside house
     │
     ▼
-PlayerHouseInterior.controller.update(delta, player)
+main.js game loop:
     │
-    ├── inside && currentFloor === 0 && insideExitZone.contains(x, z)?
-    │   ├── player.position.set(outsideSpawn)
-    │   │   └── (exteriorDoorWorldPos.x, 0, exteriorDoorWorldPos.z + 1.2)
-    │   ├── inside = false
-    │   └── cooldown = 0.6s
+    ├── teleportCooldown > 0? → skip
     │
-    └── Subsequent frames use outdoor systems:
-        ├── getObstacles() → outdoorObstacles
-        ├── getCollisionMeshes() → outdoorMeshes
-        └── getGroundHeight() → 0
+    ├── for each teleporter in allTeleporters:
+    │     distance(player, tp.entry.triggerPosition) < tp.entry.radius?
+    │
+    ├── Found match:
+    │     ├── handleTeleport(tp.config.targetSpace, tp.config.spawnPosition, tp.config.spawnOrientation)
+    │     │     ├── targetSpace = SPACE_LOOKUP["WORLD"]
+    │     │     ├── spaceManager.clear()           // remove house interior
+    │     │     ├── spaceManager.load(world)        // add world objects
+    │     │     ├── player.position = spawnPos      // outside door
+    │     │     ├── snap to ground height (0)
+    │     │     └── teleportCooldown = 1.0
+    │     └── break
 ```
 
-## Trigger Zones
+## Trigger Zone Design
 
-| Zone | Center | Size | Purpose |
-|------|--------|------|---------|
-| `outsideDoorZone` | Exterior door position | 2×0.85 | Enter house |
-| `insideExitZone` | HOUSE_ORIGIN + south wall | 2×0.7 | Exit house |
+### Rectangular Triggers (Doors)
 
-## Implementation
+Door teleporters use thin rectangular zones:
 
-- Zone definition: `src/PlayerHouseInterior.js:437-447`
-- Door zones: `src/PlayerHouseInterior.js:493-504`
-- Teleport logic: `src/PlayerHouseInterior.js:571-588`
+```javascript
+{
+  triggerSpace: "WORLD",
+  triggerPosition: [x, y, z],    // 1-2 units outside door threshold
+  triggerWidth: 1.8,              // X extent (door width)
+  triggerDepth: 0.1,              // Z extent (thin line)
+  targetSpace: "ASH_HOUSE",
+  spawnPosition: [300, 0, 303.8], // inside house, away from exit trigger
+  spawnOrientation: Math.PI,
+}
+```
+
+### Why Rectangular
+
+- Thin rectangle (1.8 × 0.1) placed just outside the door
+- Prevents entry/exit loops (spawn is outside the other trigger)
+- Matches door width for natural feel
+
+### Cooldown System
+
+| Mechanism | Duration | Purpose |
+|-----------|----------|---------|
+| Global cooldown | 1.0s | Prevents any teleport after one fires |
+| Per-teleporter cooldown | 0.8s | Prevents same teleporter from re-firing |
+| Input lock | 0.2s | Prevents player drift after teleport |
+
+## Per-House Positions
+
+### AshHouse
+
+| Trigger | Position | Notes |
+|---------|----------|-------|
+| Entry (WORLD → ASH_HOUSE) | [-5, 0, -6] | 2 units outside door at z=-8 |
+| Exit (ASH_HOUSE → WORLD) | [300, 0, 306] | Inside door at z=305 |
+| Spawn inside | [300, 0, 303.8] | 1.2 units inside from door |
+| Spawn outside | [-5, 0, -4.5] | 3.5 units outside door |
+
+### GaryHouse
+
+| Trigger | Position | Notes |
+|---------|----------|-------|
+| Entry (WORLD → GARY_HOUSE) | [5, 0, -6] | 2 units outside door at z=-8 |
+| Exit (GARY_HOUSE → WORLD) | [400, 0, 306] | Inside door at z=305 |
+| Spawn inside | [400, 0, 303.8] | 1.2 units inside from door |
+| Spawn outside | [5, 0, -4.5] | 3.5 units outside door |
+
+### OakLab
+
+| Trigger | Position | Notes |
+|---------|----------|-------|
+| Entry (WORLD → OAK_LAB) | [0, 0, 39] | 2 units outside door at z=37 |
+| Exit (OAK_LAB → WORLD) | [500, 0, 312] | Inside door at z=312 |
+| Spawn inside | [500, 0, 308] | 4 units inside from door |
+| Spawn outside | [0, 0, 39] | 2 units outside door |

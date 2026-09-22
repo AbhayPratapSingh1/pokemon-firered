@@ -1,62 +1,112 @@
 # World Module
 
-**File:** `src/World.js` (238 lines)
+**File:** `src/World.js`
 
 ## Purpose
 
-Generates the outdoor town layout — ground plane, buildings, paths, trees, fences, pond, and the collision obstacle list.
+Central orchestrator that builds the entire game world: BUILDERS registry (29 object builders), Space hierarchy from house configs, teleporter resolution, and obstacle generation.
 
 ## Responsibilities
 
-- Create 200×200 green ground plane
-- Place 3 buildings (player's house, neighbor's house, lab)
-- Draw dirt paths from spawn to each building
-- Scatter 16 trees in a ring (avoiding buildings)
-- Add fence segments, signpost, and a pond
-- Build collision obstacles (including 3-box door notch for player's house)
-- Place the most recently saved model from the editor
+- Register all 29 OBJ type builders in `BUILDERS` registry
+- Build root World Space with ground and trees
+- For each house config: build exterior, interior, obstacles, interactables, teleporters
+- Resolve teleporter targets via `SPACE_LOOKUP`
+- Build world obstacles (tree trunks + house wall collision boxes)
 
 ## Public Interface
 
 ```javascript
-createWorld(scene) → { ground, obstacles, size }
+createWorld(scene) → { world, spaceManager, allTeleporters, worldObstacles }
 ```
+
+Also exports `SPACE_LOOKUP` — dictionary mapping space name strings to Space instances.
 
 ## Key Exports
 
 | Export | Type | Purpose |
 |--------|------|---------|
-| `createWorld` | Function | Main entry point — builds everything |
-| `PLAYERS_HOUSE_DOOR_POSITION` | Vector3 | World position of the player's house door |
+| `createWorld` | Function | Main entry — builds everything, returns systems |
+| `SPACE_LOOKUP` | Object | Maps space names → Space instances |
 
 ## Internal Functions
 
+### Builders
+
 | Function | Purpose |
 |----------|---------|
-| `createGround()` | Green plane (200×200) |
-| `addPathSegment(scene, from, to, width)` | Visual dirt strip between two points |
-| `addPond(scene, position, radius)` | Blue circle on ground |
-| `scatterTrees(scene, obstacles, exclusionZones)` | Random tree placement in ring |
-| `buildPlayersHouseObstacles(house)` | 3 collision boxes with door notch |
-| `createTownLayout(scene)` | Assembles all town elements |
-| `placeDemoSavedModel(scene, obstacles)` | Most recent saved model from editor |
-| `isInsideExclusionZone(x, z, exclusionZones)` | Checks if position is in exclusion zone |
+| `registerBuilders()` | Populates `BUILDERS` with all 29 OBJ type builders |
+| `buildTree(mesh, x, z, y)` | Creates tree trunk + leaf canopy |
+
+### Space Building
+
+| Function | Purpose |
+|----------|---------|
+| `buildExteriorObjects(objects)` | Maps object configs → THREE.Group via BUILDERS |
+| `buildInteriorObjects(objects, origin)` | Same + offsets by origin, sets collide/action userData |
+| `buildTeleporters(configs)` | Creates Teleporter instances from config |
+| `resolveTeleportTargets(teleporters)` | Wires teleporter.target via SPACE_LOOKUP |
+| `buildWorldSpace()` | Assembles root World Space + all house spaces |
+
+### Obstacles
+
+| Function | Purpose |
+|----------|---------|
+| `buildWorldObstacles(world)` | Tree trunks + manual house wall collision boxes |
+
+## BUILDERS Registry
+
+Maps OBJ type strings to builder functions:
+
+```javascript
+BUILDERS[OBJ.GROUND_FLOOR] = (mesh, cfg) => { ... };
+BUILDERS[OBJ.WALLS] = (mesh, cfg) => { ... };
+BUILDERS[OBJ.TABLE] = (mesh, cfg) => { ... };
+// ... 29 total
+```
+
+Each builder receives a `THREE.Group` and a config object, creating geometry and adding it to the group.
+
+## HOUSE Builder Config
+
+The HOUSE exterior builder supports:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `width` | 6 | Building width (X) |
+| `depth` | 6 | Building depth (Z) |
+| `wallHeight` | 3 | Wall height |
+| `roofHeight` | 2.2 | Roof height (ignored if flatRoof) |
+| `wallColor` | WALL_DEFAULT | Wall material color |
+| `roofColor` | ROOF_DEFAULT | Roof material color |
+| `flatRoof` | false | Box roof instead of pyramid |
+| `windows` | [] | Array of `{x, y, z, width, height}` |
+
+## Space Hierarchy
+
+```
+world (Space "WORLD")
+  interior: [ground, trees]
+  children:
+    houseSpace (Space "ASH_HOUSE")
+      exterior: [house shell at (-5, 0, -8)]
+      interior: [furniture at origin (300, 0, 300)]
+    houseSpace (Space "GARY_HOUSE")
+      exterior: [house shell at (5, 0, -8)]
+      interior: [furniture at origin (400, 0, 300)]
+    houseSpace (Space "OAK_LAB")
+      exterior: [lab shell at (0, 0, 25)]
+      interior: [lab furniture at origin (500, 0, 300)]
+  teleporters: [entry/exit for each house]
+```
 
 ## Obstacle Structure
 
 ```javascript
 obstacles = [
-  { mesh: THREE.Group, box: THREE.Box3 },  // Each building/tree
+  { mesh: child, box: THREE.Box3, canStandOn: false },  // furniture
+  { mesh: child, box: THREE.Box3, canStandOn: true },   // stair steps
+  { mesh: null, box: THREE.Box3 },                       // house walls
   ...
 ]
 ```
-
-## Layout Constants
-
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `GROUND_SIZE` | 200 | Ground plane dimensions |
-| `TREE_COUNT` | 16 | Number of trees |
-| `TREE_RING_MIN` | 30 | Inner radius for tree ring |
-| `TREE_RING_MAX` | 70 | Outer radius for tree ring |
-| `PLAYERS_HOUSE_POSITION` | (-14, 0, -14) | Player's house location |

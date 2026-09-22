@@ -1,4 +1,4 @@
-# Pokemon 3D Game — Codebase & Workflow Documentation
+# Pokemon 3D Game — Codebase Documentation
 
 A Pokemon FireRed/LeafGreen-inspired 3D world built with Three.js (v0.169.0), using ES modules with no build tool, served via `python3 -m http.server`.
 
@@ -8,18 +8,20 @@ A Pokemon FireRed/LeafGreen-inspired 3D world built with Three.js (v0.169.0), us
 
 1. [Project Overview](#1-project-overview)
 2. [Architecture](#2-architecture)
-3. [Engine: Space System](#3-engine-space-system)
-4. [Game Flow](#4-game-flow)
-5. [Player System](#5-player-system)
-6. [Collision System](#6-collision-system)
-7. [Camera System](#7-camera-system)
-8. [House & Interior System](#8-house--interior-system)
-9. [Teleporter System](#9-teleporter-system)
-10. [Component System](#10-component-system)
-11. [Editor System](#11-editor-system)
-12. [Model Store System](#12-model-store-system)
-13. [Data Flow](#13-data-flow)
-14. [How to Extend](#14-how-to-extend)
+3. [Config System](#3-config-system)
+4. [Engine: Space System](#4-engine-space-system)
+5. [House System](#5-house-system)
+6. [Game Flow](#6-game-flow)
+7. [Player System](#7-player-system)
+8. [Collision System](#8-collision-system)
+9. [Camera System](#9-camera-system)
+10. [Interaction System](#10-interaction-system)
+11. [Teleporter System](#11-teleporter-system)
+12. [World Builder (BUILDERS)](#12-world-builder-builders)
+13. [Component System](#13-component-system)
+14. [Editor System](#14-editor-system)
+15. [Model Store System](#15-model-store-system)
+16. [How to Extend](#16-how-to-extend)
 
 ---
 
@@ -29,49 +31,64 @@ Two applications share one codebase:
 
 | Application | Entry HTML | Entry JS | Purpose |
 |-------------|-----------|----------|---------|
-| **Game** | `index.html` | `src/main.js` | Play mode - explore world, enter houses, interact |
-| **Model Builder** | `editor.html` | `src/EditorApp.js` | Visual editor - place parts, save models |
+| **Game** | `index.html` | `src/main.js` | Play mode — explore world, enter houses, interact |
+| **Model Builder** | `editor.html` | `src/EditorApp.js` | Visual editor — place parts, save models |
 
 ### File Structure
 
 ```
 pokemon/
-  index.html                  # Game entry
-  editor.html                 # Editor entry
-  style.css                   # Shared styles
-  dev.sh                      # HTTP server launcher (port 8934)
+  index.html                      # Game entry
+  editor.html                     # Editor entry
+  style.css                       # Shared styles
+  dev.sh                          # HTTP server launcher (port 8934)
   assets/
-    adventurer.glb            # Player 3D model (CC0 by Quaternius)
+    adventurer.glb                # Player 3D model (CC0 by Quaternius)
   src/
-    main.js                   # Game bootstrap & loop
-    World.js                  # World scene construction
-    Player.js                 # Player character + physics
-    Input.js                  # Keyboard/mouse input
-    CameraController.js       # Third-person camera
-    Collision.js              # AABB collision resolution
-    InteractionManager.js     # Proximity interactions (E key)
-    Buildings.js              # Generic building factories
-    HousePartBuilder.js       # House part builder registry
-    PartKit.js                # Part mesh builder
-    ModelStore.js             # localStorage save/load
-    ModelLoader.js            # Saved model to scene
+    main.js                       # Game bootstrap, loop, interaction, HUD
+    World.js                      # BUILDERS registry, Space hierarchy, obstacles
+    Player.js                     # Player character, physics, GLTF model
+    Input.js                      # Keyboard/mouse input (WASD, E, Space, Shift)
+    CameraController.js           # Third-person camera with wall collision
+    Collision.js                  # AABB collision with step-snap logic
+    HousePartBuilder.js           # House part builder registry (editor)
+    PartKit.js                    # Part mesh builder (editor primitives)
+    ModelStore.js                 # localStorage save/load, JSON export/import
+    EditorApp.js                  # Editor application entry
+    EditorCameraPan.js            # Editor camera panning
+    EditorInspector.js            # Editor property inspector
+    EditorPalette.js              # Editor object palette
+    EditorPlacement.js            # Editor object placement
+    config/
+      index.js                    # Barrel export for all config
+      objTypes.js                 # OBJ enum — all object type constants
+      colors.js                   # COLORS hex palette
+      actions.js                  # ACTIONS enum (MESSAGE, GIVE_ITEM, CHANGE_SPACE)
+      spaces.js                   # SPACES enum (WORLD, ASH_HOUSE, GARY_HOUSE, OAK_LAB)
+      world.js                    # WORLD constants (ground, trees, spawn, fog, space list)
+      houses.js                   # HOUSES registry (imports from house/*/config.js)
     engine/
-      Space.js                # Recursive scene node
-      SpaceManager.js         # Context swap (clear + load)
-      Teleporter.js           # Trigger/action teleporter
-      index.js                # Barrel export
-    constants/
-      game.js                 # DIRECTIONS, HOUSES, OBJECTS, WORLD
-    house/AshHouse/
-      AshHouse.js             # Player house Space + teleporters
-      config.js               # Furniture layout
-      constants.js            # Dimensions, staircase geometry
-    buildings/
-      GaryHouse/              # Gary's house exterior
-      OakLab/                 # Oak's Lab
-    components/               # 23 visual components
-      shared.js               # COLORS palette + helpers
-      Bed/ TV/ Stairs/ Tree/ Plant/ Sink/ ...
+      Space.js                    # Recursive scene node (exterior/interior/children)
+      SpaceManager.js             # Context swap (clear + load)
+      Teleporter.js               # Trigger/action teleporter (circular + rectangular)
+      index.js                    # Barrel export
+    house/
+      AshHouse/
+        config.js                 # Full layout: exterior, interior, teleporters, actions
+        constants.js              # Building dimensions, staircase math, world origin
+      GaryHouse/
+        config.js                 # Mirrored layout, blue roof, different flavor text
+        constants.js              # Mirrored dimensions, staircase math
+      OakLab/
+        config.js                 # Long 14x24 lab, flat roof, lab furniture, actions
+        constants.js              # Building dimensions, world origin
+    components/                   # 28 component subdirectories
+      shared.js                   # addShadow() helper
+      Bed/ TV/ Stairs/ Tree/ Plant/ Sink/ Cupboard/ DiningSet/
+      ComputerDesk/ Table/ Chair/ KitchenCounter/ Pokeball/
+      LabShelf/ LabMachine/ LabDesk/ LabPlant/
+      Floor/ Walls/ Roof/ Door/ Window/ Banner/ Chimney/
+      Mailbox/ Sign/ WindowBox/ Fence/ Grass/ Water/ Shelter/
       (each: ComponentName.js + config.js)
 ```
 
@@ -83,23 +100,23 @@ pokemon/
 
 Everything in the game world is a **Space**. A Space has:
 
-- **exterior** - what you see when looking at it from outside (parent context)
-- **interior** - what you see when you are inside it
-- **children** - sub-spaces that can be entered
+- **exterior** — what you see when looking at it from outside (parent context)
+- **interior** — what you see when you are inside it
+- **children** — sub-spaces that can be entered
 
 ```
-World Space (name: "world")
-  interior: [ground, paths, trees]
+World Space (name: "WORLD")
+  interior: [ground, trees]
   children:
-    players_house Space
-      exterior: [walls, roof, door, windows]
-      interior: [furniture, stairs, floor]
-    gary_house Space
-      exterior: [walls, roof, chimney]
-      interior: [furniture]
-    oak_lab Space
-      exterior: [walls, flat roof]
-      interior: [lab equipment, pokeballs]
+    ASH_HOUSE Space
+      exterior: [walls, roof, door]  (at world position [-5, 0, -8])
+      interior: [furniture, stairs, 2 floors]
+    GARY_HOUSE Space
+      exterior: [walls, roof, door]  (at world position [5, 0, -8])
+      interior: [furniture, stairs, 2 floors]
+    OAK_LAB Space
+      exterior: [walls, flat roof]   (at world position [0, 0, 25])
+      interior: [lab equipment, pokeballs, long room]
   teleporters: [entry/exit for each house]
 ```
 
@@ -111,25 +128,100 @@ When you are inside a space, you see:
 this.interior + all children[*].exterior
 ```
 
-- **World**: ground, paths, trees + house shells
-- **House**: furniture, stairs (no children, so just interior)
+- **World**: ground, trees + house shells
+- **House**: furniture, stairs, floors (no children, so just interior)
+
+### Config-Driven Houses
+
+Each house is defined by a config object in `src/house/*/config.js`:
+
+```javascript
+export const ASH_HOUSE = {
+  name: "Ash's House",
+  exterior: {
+    position: [-5, 0, -8],           // world position
+    facing: DIRECTIONS.SOUTH,
+    objects: [                        // built by BUILDERS registry
+      { type: OBJ.HOUSE, position: [0,0,0], config: { width:6, depth:6, ... } },
+    ],
+  },
+  interior: {
+    origin: [300, 0, 300],           // interior world offset
+    objects: [
+      { type: OBJ.GROUND_FLOOR, position: [0,0,0], config: { width:12, depth:10 } },
+      { type: OBJ.WALLS, position: [0,0,0], collide: true, config: { ... } },
+      { type: OBJ.TV, position: [-5, 0, -4.5], collide: true,
+        action: msg("Watch TV", "The news is on...") },
+      // ... more furniture
+    ],
+  },
+  teleporters: [
+    { triggerSpace: "WORLD", triggerPosition: [...], targetSpace: "ASH_HOUSE", ... },
+    { triggerSpace: "ASH_HOUSE", triggerPosition: [...], targetSpace: "WORLD", ... },
+  ],
+};
+```
+
+### SPACE_LOOKUP Pattern
+
+Teleporters reference spaces by string name. After all spaces are created, targets are resolved:
+
+```javascript
+export const SPACE_LOOKUP = {};
+SPACE_LOOKUP["WORLD"] = world;
+SPACE_LOOKUP["ASH_HOUSE"] = houseSpace;
+// ... resolve teleporter targets
+tp.entry.target = SPACE_LOOKUP[tp.config.targetSpace];
+```
 
 ---
 
-## 3. Engine: Space System
+## 3. Config System
+
+All configuration lives in `src/config/`:
+
+| File | Exports | Purpose |
+|------|---------|---------|
+| `objTypes.js` | `OBJ` | 28 object type string constants |
+| `colors.js` | `COLORS` | 18 hex color constants |
+| `actions.js` | `ACTIONS` | 3 action types: MESSAGE, GIVE_ITEM, CHANGE_SPACE |
+| `spaces.js` | `SPACES` | 4 space names: WORLD, ASH_HOUSE, GARY_HOUSE, OAK_LAB |
+| `world.js` | `WORLD` | Ground size, tree count, spawn position, fog, space list |
+| `houses.js` | `HOUSES` | Registry mapping space names to house configs |
+| `index.js` | barrel | Re-exports all of the above |
+
+### OBJ Types
+
+| Category | Types |
+|----------|-------|
+| **Structure** | HOUSE, GROUND_FLOOR, FLOOR_SLAB, FLOOR_WITH_HOLE, WALLS, ROOF, CEILING, DOOR_FRAME, WINDOW, STAIRS, STAIR_STEP, RAILING |
+| **Furniture** | TV, BED, SINK, CUPBOARD, DINING_SET, PLANT, COMPUTER_DESK, TABLE, KITCHEN_COUNTER, VISUAL_STAIRS, CHAIR |
+| **Nature** | TREE, GRASS, WATER |
+| **Lab** | LAB_SHELF, LAB_MACHINE, LAB_DESK, LAB_PLANT, POKEBALL |
+
+### WORLD Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| GROUND_SIZE | 800 | World ground plane size |
+| TREE_COUNT | 0 | Trees spawned (0 = disabled) |
+| SPAWN_POSITION | (0, 0, 0) | Player starting position |
+| BACKGROUND_COLOR | 0x87ceeb | Sky blue |
+| FOG_NEAR / FOG_FAR | 60 / 160 | Distance fog range |
+
+---
+
+## 4. Engine: Space System
 
 ### Space (`src/engine/Space.js`)
 
-The fundamental building block. Every Space has exterior, interior, children, and data.
+Recursive scene node. Each Space has exterior, interior, children, and data.
 
 ```javascript
-const house = new Space({
-  name: "garyHouse",
-  exterior: [wallsMesh, roofMesh],       // seen from world
-  interior: [bedMesh, tableMesh],        // seen when inside
-  children: [],                           // sub-spaces
-  data: { obstacles, interactables },     // custom data
-});
+const house = new Space({ name: "ASH_HOUSE" });
+house.exterior = [wallsMesh, roofMesh];       // seen from world
+house.interior = [bedMesh, tableMesh];        // seen when inside
+house.data = { obstacles, interactables };    // collision + interaction data
 
 world.addChild(house);
 house.getInsideObjects();  // [bedMesh, tableMesh]
@@ -143,31 +235,84 @@ Handles swapping contexts. Only ONE space is active in the scene at a time.
 ```javascript
 const sm = new SpaceManager(scene);
 sm.load(world);     // adds world.interior + children[*].exterior
-
 sm.clear();         // removes all current objects
-sm.load(house);     // adds house.interior + children[*].exterior
+sm.load(house);     // adds house.interior
 sm.getCurrent();    // returns active space
 ```
 
 ### Teleporter (`src/engine/Teleporter.js`)
 
-Connects spaces. Two types:
+Connects spaces. Supports two shapes and two trigger modes:
+
+| Shape | Config | Detection |
+|-------|--------|-----------|
+| **Circular** | `radius` | `distance(player, trigger) < radius` |
+| **Rectangular** | `width`, `depth` | `|dx| <= width/2 && |dz| <= depth/2` |
 
 | Type | Entry | Exit | Example |
 |------|-------|------|---------|
 | **trigger** | Auto (collision zone) | Auto (collision zone) | Door |
-| **action** | Manual (press E) | Manual (press ESC) | TV screen |
+| **action** | Manual (press E) | Manual (press E) | TV screen |
 
 Key fields:
-- `triggerPosition` - where collision is checked (source zone)
-- `position` - where player appears (destination)
-- `target` - the Space to enter
-- `radius` - trigger zone size
-- `orientation` - player rotation on arrival
+- `triggerPosition` — where collision is checked (source zone)
+- `position` — where player appears (destination)
+- `target` — the Space to enter
+- `radius` / `width` / `depth` — trigger zone size
+- `orientation` — player rotation on arrival
 
 ---
 
-## 4. Game Flow
+## 5. House System
+
+### Three Houses
+
+| House | World Position | Interior Origin | Size | Roof | Features |
+|-------|---------------|-----------------|------|------|----------|
+| **Ash's House** | [-5, 0, -8] | [300, 0, 300] | 6×6 exterior, 12×10 interior | Pyramid (red) | 2 floors, L-shaped stairs, TV, kitchen |
+| **Gary's House** | [5, 0, -8] | [400, 0, 300] | 6×6 exterior, 12×10 interior | Pyramid (blue) | Mirrored layout, direction -1 stairs |
+| **Oak's Lab** | [0, 0, 25] | [500, 0, 300] | 14×24 exterior, 14×24 interior | Flat (gray-blue) | Long room, lab equipment, pokeballs |
+
+### AshHouse Interior (2 floors)
+
+**Ground floor (z: -5 to +5):**
+- North wall: Sink, Cupboard, TV
+- Center: Table + 4 chairs
+- South wall: Plants flanking door
+- East wall: L-shaped staircase (direction 1)
+
+**First floor (y ≈ 4.75):**
+- Bed (NW corner)
+- Computer desk (west wall)
+- TV (south section)
+- Plants, table
+- Floor with hole for staircase
+- Railing around hole
+
+### GaryHouse Interior (2 floors)
+
+Mirrored from AshHouse:
+- Staircase on LEFT (west), direction -1
+- Furniture on RIGHT (east) to avoid staircase hole
+- Blue roof, different flavor text
+
+### OakLab Interior (single floor, 14×24)
+
+Long room matching FireRed layout:
+
+| Zone | z | Furniture |
+|------|---|-----------|
+| Back wall (N) | -11 | Bookshelf, Computer desk, Large machine |
+| Mid-back | -7, -5 | Two bookshelves (west wall) |
+| Center | -2 | Pokemon table (3.0 wide) + 3 Poké Balls |
+| Mid-front | +4 | Two lab desks (left & right) |
+| Front | +8 | Two cabinets (left & right) |
+| Entrance | +11 | Two plants flanking door |
+| West side | +1 | Observation machine |
+
+---
+
+## 6. Game Flow
 
 ### Startup Sequence
 
@@ -175,32 +320,27 @@ Key fields:
 main.js
   |
   +-- createWorld(scene)                    [World.js]
-  |     +-- createWorldSpace()
-  |     |     +-- new Space("world")
-  |     |     +-- Add ground, paths, trees to world.interior
-  |     |     +-- For each house in HOUSES:
-  |     |           +-- createHouseSpace({...})     [AshHouse.js]
-  |     |           |     +-- Build exterior shell (walls, roof, door, windows)
-  |     |           |     +-- Build interior (floor, walls, stairs, furniture)
-  |     |           |     +-- Collect obstacles, interactables
-  |     |           |     +-- Return new Space({exterior, interior, data})
-  |     |           +-- world.addChild(houseSpace)
-  |     |           +-- createHouseTeleporters(...) [AshHouse.js]
-  |     |                 +-- entry: trigger outside, spawn at room center
-  |     |                 +-- exit: trigger inside, spawn outside
+  |     +-- new Space("WORLD")
+  |     +-- Add ground, trees to world.interior
+  |     +-- For each house in WORLD.objects:
+  |     |     +-- new Space(name)
+  |     |     +-- buildExteriorObjects(house.exterior.objects)
+  |     |     +-- Offset exterior to house.exterior.position
+  |     |     +-- world.addChild(houseSpace)
+  |     |     +-- SPACE_LOOKUP[name] = houseSpace
+  |     |     +-- buildInteriorObjects(house.interior.objects, origin)
+  |     |     +-- Collect obstacles, interactables
+  |     |     +-- buildTeleporters(house.teleporters)
   |     |
+  |     +-- resolveTeleportTargets(allTeleporters)
   |     +-- new SpaceManager(scene)
-  |     +-- spaceManager.load(world)        // world objects enter scene
-  |     +-- Build worldObstacles (tree trunks + manual wall boxes)
+  |     +-- spaceManager.load(world)
+  |     +-- buildWorldObstacles(world)
   |
-  +-- new Player(scene, spawnPosition)       [Player.js]
-  |     +-- Load GLB model (async)
-  |     +-- Show placeholder capsule until loaded
-  |
-  +-- new InputManager(canvas)               [Input.js]
-  +-- new CameraController(camera)           [CameraController.js]
-  +-- new InteractionManager()               [InteractionManager.js]
-  |
+  +-- spaceManager.load(SPACE_LOOKUP["WORLD"])
+  +-- new Player(scene, spawnPosition)
+  +-- new InputManager(canvas)
+  +-- new CameraController(camera)
   +-- animate() loop starts
 ```
 
@@ -208,68 +348,79 @@ main.js
 
 ```
 animate() {
-  1. input.update()                    // capture keyboard/mouse state
+  1. input.update()
 
   2. if teleportCooldown <= 0:
-     for each house:
-       if entry.updateTrigger(player):  // check entry zone collision
-         handleTeleport(entry)
-       if exit.updateTrigger(player):   // check exit zone collision
-         handleTeleport(exit)
+     for each teleporter:
+       if distance(player, trigger) < radius:
+         handleTeleport(target, spawn, orientation)
 
-  3. player.update(delta, input, yaw, obstacles, groundHeight)
-     +-- Calculate movement direction (WASD + camera yaw)
-     +-- Apply acceleration / deceleration
-     +-- Apply gravity + jump
-     +-- Integrate position
-     +-- Ground clamp (step-snap for stairs)
+  3. Interaction: find nearest interactable within INTERACT_RANGE (2.0)
+     Show/hide prompt HUD
+     If E pressed: handleAction(action)
+
+  4. Message timer countdown (3s duration)
+
+  5. player.update(delta, input, yaw, obstacles, getGroundHeight)
+     +-- WASD movement relative to camera yaw
+     +-- Acceleration/deceleration (exponential ease)
+     +-- Gravity + jump
+     +-- Ground clamp + step-snap for stairs
      +-- resolveCollisions(position, obstacles)
-     +-- Update animation (idle/walk/run)
+     +-- Animation state (idle/walk/run)
 
-  4. cameraController.update(delta, input, player, collisionMeshes)
-     +-- Calculate desired position (spherical coords)
-     +-- Raycast backward to find walls
-     +-- Pull camera in front of walls
-     +-- Smooth lerp to desired position
+  6. cameraController.update(delta, input, player, collisionMeshes)
+     +-- Spherical coords from yaw/pitch
+     +-- Raycast backward for wall collision
+     +-- Smooth lerp follow
 
-  5. renderer.render(scene, camera)
+  7. Debug HUD: space name + player position
+
+  8. renderer.render(scene, camera)
 }
 ```
 
 ### Teleport Flow
 
 ```
-handleTeleport(teleporter):
-  1. spaceManager.clear()           // remove ALL current objects from scene
-  2. spaceManager.load(target)      // add target space's interior + child exteriors
-  3. player.position = dest         // reposition player
-  4. player.root.rotation = orient  // set facing direction
-  5. player.velocity = (0,0,0)      // stop all movement
-  6. snap to ground height          // prevent falling through floor
-  7. teleportCooldown = 1.0         // global cooldown (prevents loop)
+handleTeleport(targetSpaceName, spawnPos, spawnOrientation):
+  1. targetSpace = SPACE_LOOKUP[targetSpaceName]
+  2. spaceManager.clear()           // remove ALL current objects
+  3. spaceManager.load(targetSpace) // add target interior + child exteriors
+  4. player.position = spawnPos
+  5. player.velocity = (0,0,0)
+  6. player.facingAngle = spawnOrientation
+  7. snap to ground height
+  8. teleportCooldown = 1.0
+  9. inputLockTimer = 0.2           // prevent immediate re-trigger
 ```
 
 ---
 
-## 5. Player System
+## 7. Player System
 
 **File:** `src/Player.js`
 
 ### Constants
 
-- `COLLISION_RADIUS = 0.45` - player horizontal collision radius
-- `COLLISION_HEIGHT = 1.8` - player vertical collision height
-- `HEAD_HEIGHT = 1.55` - camera look target height
-- `WALK_SPEED = 3.2` m/s
-- `SPRINT_MULTIPLIER = 1.8`
+| Constant | Value | Description |
+|----------|-------|-------------|
+| COLLISION_RADIUS | 0.45 | Horizontal collision radius |
+| COLLISION_HEIGHT | 1.8 | Vertical collision height |
+| WALK_SPEED | 3.2 | Base walk speed (m/s) |
+| SPRINT_MULTIPLIER | 1.8 | Sprint speed multiplier |
+| GRAVITY | -20 | Gravity (m/s²) |
+| JUMP_SPEED | 8 | Jump velocity (m/s) |
+| MAX_STEP_UP | 0.5 | Maximum step height for stair climbing |
+| STEP_SNAP_EPSILON | 0.01 | Snap threshold for step surface |
 
 ### Physics
 
 - Smooth acceleration/deceleration (exponential ease, ACCELERATION = 12)
-- Gravity: -20 m/s^2
+- Gravity: -20 m/s²
 - Jump speed: 8 m/s
-- Step-snap: exponential ease for stair climbing (smoothing = 18), epsilon snap (0.01m)
-- `STEP_SNAP_MAX_GAP = 0.5` - above this, snap instantly (landing drop)
+- Step-snap: exponential ease for stair climbing (smoothing = 18)
+- `STEP_SNAP_MAX_GAP = 0.5` — above this, snap instantly (landing drop)
 
 ### Model Loading
 
@@ -278,28 +429,38 @@ handleTeleport(teleporter):
 - Shows placeholder capsule while loading
 - Animations: idle, walk, run (blended via AnimationMixer)
 
-### Key Methods
-
-- `update(delta, input, cameraYaw, obstacles, getGroundHeight)` - full physics + collision
-- `position` - getter for `root.position`
-- `headHeight` - camera look target
-
 ---
 
-## 6. Collision System
+## 8. Collision System
 
 **File:** `src/Collision.js`
 
 ### How It Works
 
-Pure function: `resolveCollisions(position, radius, height, obstacles)`
+`resolveCollisions(position, radius, height, obstacles)`
 
 1. Creates player AABB from position + radius + height
 2. For each obstacle box:
    - Check intersection
    - Calculate overlap on X, Y, Z axes
-   - Push out along axis of minimum penetration
-   - Update playerBox for subsequent checks
+   - If `canStandOn` and obstacle height ≤ `MAX_STEP_HEIGHT` (0.5):
+     - Snap player to step surface
+   - Else: push out along axis of minimum penetration via `pushHorizontally()`
+3. Rebuild playerBox for subsequent checks
+
+### `pushHorizontally()` Helper
+
+```javascript
+function pushHorizontally(position, box, overlapX, overlapZ) {
+  if (overlapX < overlapZ) {
+    // Push along X away from box center
+    position.x += position.x < centerBox ? -overlapX : overlapX;
+  } else {
+    // Push along Z away from box center
+    position.z += position.z < centerBox ? -overlapZ : overlapZ;
+  }
+}
+```
 
 ### Obstacle Types
 
@@ -307,22 +468,20 @@ Pure function: `resolveCollisions(position, radius, height, obstacles)`
 |---------|--------|--------|
 | **World** | Tree trunks (`userData.collide`) | `{mesh, box}` |
 | **World** | House walls (manual collision boxes) | `{mesh: null, box}` |
-| **House interior** | Furniture (`userData.collide`) | `{mesh, box}` |
+| **Interior** | Furniture (`userData.collide`) | `{mesh, box, canStandOn}` |
+| **Interior** | Stair steps (`userData.canStandOn`) | `{mesh, box, canStandOn: true}` |
 
-House walls use manual collision boxes. The south wall is split around the door gap:
+### `canStandOn` Logic
 
-```
-  West wall (full)
-  East wall (full)
-  North wall (full)
-  South wall left (west of door)
-  South wall right (east of door)
-  South wall above door (lintel)
-```
+When an obstacle has `canStandOn: true` and height ≤ 0.5:
+- Player feet within 0.05 of surface → snap up
+- Step distance ≤ 0.5 → snap up
+- Player inside XZ footprint → push down to sit on top
+- Otherwise → horizontal push
 
 ---
 
-## 7. Camera System
+## 9. Camera System
 
 **File:** `src/CameraController.js`
 
@@ -331,9 +490,9 @@ House walls use manual collision boxes. The south wall is split around the door 
 Third-person GTA-style camera:
 
 1. **Look target** = player position + (0, HEAD_HEIGHT, 0)
-2. **Desired position** = target + direction * DISTANCE (spherical: yaw + pitch)
+2. **Desired position** = target + direction × DISTANCE (spherical: yaw + pitch)
 3. **Wall detection** = raycast from target backward along camera direction
-4. **Collision response** = if wall hit, pull camera to hit distance - margin
+4. **Collision response** = if wall hit, pull camera to hit distance − margin
 5. **Smooth follow** = lerp to desired position (snap-in when wall pushes closer)
 
 ### Constraints
@@ -341,80 +500,170 @@ Third-person GTA-style camera:
 - Pitch: clamped to [-0.6, 1.2] radians
 - Min height above ground: 0.5m
 - Camera collision margin: 0.25m
-- Collision meshes: raw THREE.Object3D (filtered from obstacles, nulls removed)
+- Collision meshes: `userData.collide || userData.cameraCollide`
 
 ---
 
-## 8. House & Interior System
+## 10. Interaction System
 
-### Player House (`src/house/AshHouse/`)
+**File:** `src/main.js`
 
-Key constants:
+### How It Works
 
+Each frame:
+
+1. Iterate `currentSpace.data.interactables`
+2. Find nearest object within `INTERACT_RANGE` (2.0 units)
+3. If found: show prompt HUD with `action.prompt` text
+4. If E pressed: call `handleAction(action)`
+
+### Action Types
+
+| Type | Handler | Behavior |
+|------|---------|----------|
+| `ACTIONS.MESSAGE` | `showMessage(message)` | Display text for 3 seconds |
+| `ACTIONS.GIVE_ITEM` | `showMessage(message)` | Display text for 3 seconds |
+| `ACTIONS.CHANGE_SPACE` | `handleTeleport(...)` | Teleport to target space |
+
+### Object Config Pattern
+
+Furniture with interaction:
+
+```javascript
+{
+  type: OBJ.TV,
+  position: [-5, 0, -4.5],
+  collide: true,
+  action: {
+    type: ACTIONS.MESSAGE,
+    prompt: "Watch TV",           // shown in prompt HUD
+    message: "The news is on...", // shown for 3 seconds on E press
+  },
+}
 ```
-HOUSE_ORIGIN = (300, 0, 300)     // interior placed far from world
-FLOOR_WIDTH = 12, FLOOR_DEPTH = 10
-WALL_HEIGHT = 3.6
-FLOOR2_HEIGHT = 3.9              // second floor height
-FLOOR_SLAB_THICK = 0.3
 
-L-Shaped Staircase:
-  Flight A: 6 steps, X: -5 to -1.7, Z: -3.5 to 0.5
-  Landing:  X: -1.7 to 1.7, Z: -3.5 to 0.5
-  Flight B: 7 steps, X: 1.7 to 5, Z: 0.5 to 4.5
-```
+### How Interactables Are Collected
 
-### AshHouse.js Exports
-
-- `createHouseSpace({name, worldPosition, wallColor, roofColor, rotation})` - returns a Space
-- `createHouseTeleporters(houseSpace, doorWorldPosition, doorDirection, worldSpace)` - returns `{entry, exit}`
-
-### Furniture Layout
-
-**Ground Floor:** TV (NW corner), Cupboard (west wall), Dining set (center-west), Sink (south wall), Plants (flanking door)
-
-**Second Floor:** Bed (NW corner), Cupboard (south wall), TV (west wall), Computer desk (east wall)
-
-### Ground Height Function
-
-`getGroundHeight(worldX, worldZ)` transforms world coordinates to house-local, checks which stair region the player is in, returns the appropriate Y height.
+In `World.js`, `buildWorldSpace()` traverses interior objects:
+- If `obj.userData.collide` → added to obstacles
+- If `obj.userData.action` → added to interactables
+- Both stored on `houseSpace.data`
 
 ---
 
-## 9. Teleporter System
+## 11. Teleporter System
 
-### Per-House Teleporters
+### Config Pattern
 
-**Entry (world -> house):**
+Each house defines entry/exit teleporters:
+
+```javascript
+teleporters: [
+  {
+    triggerSpace: "WORLD",              // source space name
+    triggerPosition: [0, 0, -6.0],      // where to check collision (world coords)
+    triggerWidth: 1.8,                  // rectangular trigger width (X)
+    triggerDepth: 0.1,                  // rectangular trigger depth (Z)
+    targetSpace: "ASH_HOUSE",           // destination space name
+    spawnPosition: [300, 0, 303.8],     // where player appears
+    spawnOrientation: Math.PI,          // player facing direction
+  },
+  // ... exit teleporter
+]
 ```
-triggerPosition: doorWorldPosition + doorDirection * 1.0  (outside, near door)
-position:        HOUSE_ORIGIN                              (room center)
-orientation:     Math.PI                                   (facing into room)
-radius:          1.2
-```
 
-**Exit (house -> world):**
-```
-triggerPosition: HOUSE_ORIGIN + HALF_D - 1.0               (inside, near door)
-position:        doorWorldPosition - doorDirection * 3.0   (outside, far from door)
-orientation:     0                                          (facing house)
-radius:          1.2
-```
+### Why Rectangular Triggers
 
-### Why the Distances Matter
-
-- Entry spawn at room center (300,0,300) - away from exit trigger at door
-- Exit spawn 3.0m outside door - outside entry trigger zone (radius 1.2)
-- Prevents the entry/exit loop
+Door teleporters use thin rectangular zones (1.8 × 0.1) placed 1–2 units outside the door threshold. This prevents:
+- Entry/exit loops (spawn outside the other trigger)
+- Accidental triggers from inside
 
 ### Cooldown System
 
 - **Global cooldown**: 1.0 seconds after any teleport
-- **Individual cooldown**: 0.8 seconds per teleporter
+- **Per-teleporter cooldown**: 0.8 seconds
+- **Input lock**: 0.2 seconds (prevents drift after teleport)
 
 ---
 
-## 10. Component System
+## 12. World Builder (BUILDERS)
+
+**File:** `src/World.js`
+
+The `BUILDERS` registry maps OBJ type strings to builder functions:
+
+```javascript
+BUILDERS[OBJ.TV] = (mesh, cfg) => { ... };
+BUILDERS[OBJ.TABLE] = (mesh, cfg) => { ... };
+// ... 29 builders total
+```
+
+Each builder creates Three.js geometry and adds it to the given `mesh` (THREE.Group).
+
+### Registered Builders
+
+| Builder | Description |
+|---------|-------------|
+| GROUND_FLOOR | PlaneGeometry floor (wood material) |
+| WALLS | 4 walls with south-wall door gap |
+| ROOF | Extruded triangle cross-section roof |
+| CEILING | PlaneGeometry ceiling (facing down) |
+| FLOOR_SLAB | Solid slab with canStandOn collision |
+| FLOOR_WITH_HOLE | Extruded shape with rectangular hole |
+| RAILING | Thin colliding box rail |
+| DOOR_FRAME | 2 posts + lintel + door panel |
+| WINDOW | Frame + glass + cross bars |
+| TREE | Tree trunk + leaf canopy |
+| PLANT | Cylinder pot + sphere leaves |
+| CUPBOARD | Box body + 2 handles |
+| DINING_SET | Table + 4 legs + 4 chairs |
+| TABLE | Table top + 4 legs |
+| TV | Stand + TV body + glowing screen |
+| KITCHEN_COUNTER | Cabinet + countertop |
+| VISUAL_STAIRS | 8 ascending box steps (decorative) |
+| CHAIR | Seat + back + 4 legs |
+| SINK | Cabinet + basin + faucet |
+| BED | Frame + mattress + pillow + headboard |
+| COMPUTER_DESK | Desk + legs + monitor |
+| STAIR_STEP | Single step with optional side walls |
+| STAIRS | Built from STAIR_STEP components (straight or L-shaped) |
+| LAB_SHELF | Bookshelf body + 3 shelves of books |
+| LAB_MACHINE | Dark box body + green indicator light |
+| LAB_DESK | Desk + legs + monitor |
+| LAB_PLANT | Alias → delegates to PLANT |
+| POKEBALL | Red/white hemispheres + torus band + glowing button |
+| HOUSE | Full exterior shell (walls + roof + door + windows) |
+
+### Builder Config Options
+
+The HOUSE builder supports:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| width | 6 | Building width (X) |
+| depth | 6 | Building depth (Z) |
+| wallHeight | 3 | Wall height |
+| roofHeight | 2.2 | Roof height (ignored if flatRoof) |
+| wallColor | WALL_DEFAULT | Wall material color |
+| roofColor | ROOF_DEFAULT | Roof material color |
+| flatRoof | false | If true, box roof instead of pyramid |
+| windows | [] | Array of window configs |
+
+The STAIRS builder supports:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| stepsPerFlight | 12 | Steps per flight |
+| stepWidth | 1.5 | Step width |
+| stepDepth | 0.3 | Step depth |
+| stepHeight | 0.15 | Step height |
+| direction | 1 | 1 = north-then-west, -1 = south-then-east |
+| straight | false | Single flight vs L-shaped |
+| sideWalls | true | Outer walls along flights |
+
+---
+
+## 13. Component System
 
 ### Pattern
 
@@ -422,48 +671,41 @@ Every component: `ComponentName.js` + `config.js`
 
 ```
 src/components/
-  shared.js           // COLORS palette, addShadow(), makeBox(), at()
+  shared.js           // addShadow() helper
   Bed/
-    Bed.js            // buildBed(group, x, z, y)
+    Bed.js            // buildBed(group, config)
     config.js         // dimensions, colors
   TV/
-    TV.js             // buildTV(group, x, z, y, facing)
+    TV.js
     config.js
   Stairs/
-    Stairs.js         // buildStairsVisual(), getGroundHeight()
+    Stairs.js
     config.js
-  ... (23 total)
+  ... (28 total)
 ```
-
-### shared.js Utilities
-
-- `COLORS` - centralized color palette
-- `addShadow(mesh)` - enables castShadow + receiveShadow
-- `makeBox(w, h, d, color)` - creates a standard material box mesh
-- `at(mesh, x, y, z)` - positions a mesh and returns it
 
 ### Component List
 
 | Category | Components |
 |----------|-----------|
-| **Furniture** | TV, Plant, Cupboard, DiningSet, Sink, Bed, ComputerDesk, Table, Pokeball |
+| **Furniture** | TV, Plant, Cupboard, DiningSet, Sink, Bed, ComputerDesk, Table, Chair, KitchenCounter, Pokeball |
 | **Nature** | Grass, Tree, Water |
 | **Structure** | Banner, Shelter, Chimney, Mailbox, Sign, WindowBox, Fence |
-| **House Structure** | Floor, Walls, Roof, Door, Stairs |
+| **House Structure** | Floor, Walls, Roof, Door, Window, Stairs |
 | **Lab** | LabShelf, LabMachine, LabDesk, LabPlant |
 
 ---
 
-## 11. Editor System
+## 14. Editor System
 
 ### Entry: `editor.html` + `src/EditorApp.js`
 
 | File | Purpose |
 |------|---------|
 | `EditorApp.js` | Bootstrap, scene setup (grid, sea, lighting), animation loop |
-| `EditorPalette.js` | Left sidebar - tool list + saved models |
+| `EditorPalette.js` | Left sidebar — tool list + saved models |
 | `EditorPlacement.js` | Click-to-place parts, selection, snap-to-grid (0.5m) |
-| `EditorInspector.js` | Right panel - position/rotation/scale/color fields |
+| `EditorInspector.js` | Right panel — position/rotation/scale/color fields |
 | `EditorCameraPan.js` | WASD panning + keyboard shortcuts |
 
 ### Keyboard Shortcuts
@@ -487,13 +729,12 @@ src/components/
 
 ---
 
-## 12. Model Store System
+## 15. Model Store System
 
 ### Files
 
-- `src/ModelStore.js` - CRUD for localStorage, export/import JSON
-- `src/ModelLoader.js` - converts saved models to THREE.Group
-- `src/PartKit.js` - builds mesh for individual parts
+- `src/ModelStore.js` — CRUD for localStorage, export/import JSON
+- `src/PartKit.js` — builds mesh for individual parts
 
 ### Data Model
 
@@ -512,101 +753,50 @@ src/components/
 ### Part Types
 
 - **Primitives**: box, wall, roof, cylinder
-- **House parts**: tv, plant, bed, sink, etc. (all 23 components)
+- **House parts**: tv, plant, bed, sink, etc. (all 28 components)
 - **References**: ref (model referencing another saved model, max depth 6)
 
-### Model Resolution
-
-`resolveModelParts(modelId, allModels, rootTransform, options)`:
-- Recursively resolves ref parts
-- Composes transforms (Y-rotation + uniform scale)
-- Circular reference detection
-- Max depth: 6 levels
-
 ---
 
-## 13. Data Flow
-
-### Teleport: World to House
-
-```
-Player walks near door trigger zone
-  -> entry.updateTrigger(player) returns true
-  -> handleTeleport(entry)
-     -> spaceManager.clear()       // Remove: ground, paths, trees, house exteriors
-     -> spaceManager.load(house)   // Add: house.interior (furniture, stairs, floor)
-     -> player.position = (300, 0, 300)    // room center
-     -> player.rotation = Math.PI           // face into room
-     -> player.velocity = (0, 0, 0)
-     -> snap to ground height
-     -> teleportCooldown = 1.0
-```
-
-### Teleport: House to World
-
-```
-Player walks near exit trigger zone (inside house, near door)
-  -> exit.updateTrigger(player) returns true
-  -> handleTeleport(exit)
-     -> spaceManager.clear()       // Remove: house.interior
-     -> spaceManager.load(world)   // Add: ground, paths, trees, house exteriors
-     -> player.position = (-14, 0, -13)    // outside door
-     -> player.rotation = 0                  // face house
-     -> player.velocity = (0, 0, 0)
-     -> snap to ground height (0)
-     -> teleportCooldown = 1.0
-```
-
-### Player Movement Pipeline
-
-```
-Input (WASD + Shift + Space)
-  -> Calculate input direction (relative to camera yaw)
-  -> Target velocity = direction * speed
-  -> Accelerate toward target (exponential ease)
-  -> Apply gravity (-20 m/s^2)
-  -> Integrate position += velocity * delta
-  -> Ground clamp (step-snap for stairs)
-  -> resolveCollisions(position, obstacles)
-  -> Update animation state (idle/walk/run)
-```
-
-### Camera Pipeline
-
-```
-Look target = player.position + (0, HEAD_HEIGHT, 0)
-  -> Desired position = target + sphericalDirection * DISTANCE
-  -> Raycast backward from target to find walls
-  -> If wall hit: pull camera to hitDist - MARGIN
-  -> Lerp to desired position
-  -> Clamp min height above ground
-```
-
----
-
-## 14. How to Extend
+## 16. How to Extend
 
 ### Add a New House
 
-1. Add entry to `HOUSES` in `src/constants/game.js`
-2. In `World.js`, `createHouseSpace()` creates the Space
-3. `createHouseTeleporters()` creates entry/exit teleporters
-4. The house reuses the AshHouse interior layout (or customize)
+1. Create `src/house/NewHouse/config.js` with exterior, interior, teleporters
+2. Create `src/house/NewHouse/constants.js` with building dimensions
+3. Add space name to `src/config/spaces.js`: `NEW_HOUSE: "NEW_HOUSE"`
+4. Import config in `src/config/houses.js` and add to `HOUSES`
+5. Add to space list in `src/config/world.js`: `objects: [..., SPACES.NEW_HOUSE]`
 
 ### Add a New Interactable
 
-1. Create component in `src/components/NewThing/`
-2. Add `buildNewThing(group, x, z, y)` function
-3. Add to `BUILDERS` registry in `AshHouse.js`
-4. Add to layout config in `config.js`
-5. Add interactable data to `OBJECTS` in `constants/game.js`
+1. Add action to objects in house config:
+```javascript
+{
+  type: OBJ.TABLE,
+  position: [0, 0, 0],
+  collide: true,
+  action: {
+    type: ACTIONS.MESSAGE,
+    prompt: "Examine table",
+    message: "A dusty old table.",
+  },
+}
+```
+2. Object is auto-collected as interactable if `action` is present
 
-### Add a New Space Type (e.g. TV Interior)
+### Add a New OBJ Type
 
-1. Create Space with exterior + interior
-2. Add as child of house Space: `house.addChild(tvSpace)`
-3. Create Teleporter with type "action"
-4. Wire to key press in game loop
+1. Add constant to `src/config/objTypes.js`: `NEW_TYPE: "newType"`
+2. Register builder in `World.js`: `BUILDERS[OBJ.NEW_TYPE] = (mesh, cfg) => { ... }`
+3. Use in house config: `{ type: OBJ.NEW_TYPE, position: [...] }`
+
+### Add a New Space Type
+
+1. Add to `src/config/spaces.js`
+2. Create house config with exterior + interior
+3. Add teleporters connecting to WORLD or other spaces
+4. Register in houses.js and world.js
 
 ### Constants Reference
 
@@ -614,10 +804,9 @@ Look target = player.position + (0, HEAD_HEIGHT, 0)
 |----------|-------|----------|
 | COLLISION_RADIUS | 0.45 | Player.js |
 | COLLISION_HEIGHT | 1.8 | Player.js |
-| HOUSE_ORIGIN | (300, 0, 300) | AshHouse/constants.js |
-| FLOOR2_HEIGHT | 3.9 | AshHouse/constants.js |
 | WALK_SPEED | 3.2 | Player.js |
 | GRAVITY | -20 | Player.js |
-| SPAWN_POSITION | (0, 0, 0) | constants/game.js |
-| GROUND_SIZE | 200 | constants/game.js |
-| TREE_COUNT | 16 | constants/game.js |
+| SPAWN_POSITION | (0, 0, 0) | config/world.js |
+| GROUND_SIZE | 800 | config/world.js |
+| INTERACT_RANGE | 2.0 | main.js |
+| TELEPORT_COOLDOWN | 1.0 | main.js |
