@@ -12,5 +12,9 @@
  *   - Assembly / door   → src/house/AshHouse/AshHouse.js
  *   - Building constants → src/house/AshHouse/constants.js
  *   - Shared colors/utils → src/components/shared.js
+ *
+ * @param {THREE.Scene} scene
+ * @param {THREE.Vector3} exteriorDoorWorldPos - world position of the exterior door
+ * @param {number} doorDirection - 1 = south-facing (default), -1 = north-facing
  */
 export { setupPlayerHouse, HOUSE_ORIGIN } from "./house/AshHouse/AshHouse.js";

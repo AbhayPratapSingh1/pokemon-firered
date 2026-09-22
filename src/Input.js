@@ -109,4 +109,15 @@ export class InputManager {
     this.mouseDeltaY = 0;
     return { dx, dy };
   }
+
+  /** Clear all held keys and mouse deltas (e.g. after teleport). */
+  clear() {
+    this.keys.clear();
+    this.mouseDeltaX = 0;
+    this.mouseDeltaY = 0;
+    this.jumpPressed = false;
+    this.interactPressed = false;
+    this._jumpHeldLastFrame = false;
+    this._interactHeldLastFrame = false;
+  }
 }

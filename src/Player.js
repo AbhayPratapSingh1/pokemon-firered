@@ -9,8 +9,9 @@ const GRAVITY = -20;
 const JUMP_SPEED = 8;
 const ROTATION_SMOOTHING = 12;
 const STEP_SNAP_SMOOTHING = 18; // how quickly the feet rise onto a higher step/stair tread
-const STEP_SNAP_MAX_GAP = 0.5; // above this, treat it as a normal landing (snap instantly), not a stair step
+const STEP_SNAP_MAX_GAP = 0.6; // above this, treat it as a normal landing (snap instantly), not a stair step
 const STEP_SNAP_EPSILON = 0.01; // below this remaining gap, snap fully rather than keep asymptotically decaying
+const MAX_STEP_UP = 0.5; // max height the player can step up onto a surface
 
 // Exported so other systems (e.g. the player house's staircase) can size
 // their geometry off the player's actual capsule instead of guessing.
@@ -186,11 +187,22 @@ export class Player {
     this.root.position.z += this.velocity.z * delta;
 
     // --- Ground clamp ---
-    // groundHeight is a function of (x, z) so ramps/stairs can return a
-    // rising height instead of the flat y=0 the outdoor world uses; walking
-    // onto a rising ramp re-triggers this same "snap up to ground" every
-    // frame gravity would otherwise pull the feet below it.
-    const groundHeight = getGroundHeight(this.root.position.x, this.root.position.z);
+    // Combine terrain ground height with standable furniture surfaces
+    const px = this.root.position.x, pz = this.root.position.z;
+    let groundHeight = getGroundHeight(px, pz);
+    for (const obs of obstacles) {
+      if (!obs.canStandOn) continue;
+      // Is player horizontally over this object?
+      if (px + COLLISION_RADIUS > obs.box.min.x && px - COLLISION_RADIUS < obs.box.max.x &&
+          pz + COLLISION_RADIUS > obs.box.min.z && pz - COLLISION_RADIUS < obs.box.max.z) {
+        const surface = obs.box.max.y;
+        const feetY = this.root.position.y;
+        // Only snap if surface is reachable (within step-up height from current position)
+        if (surface - feetY <= MAX_STEP_UP) {
+          groundHeight = Math.max(groundHeight, surface);
+        }
+      }
+    }
     if (this.root.position.y <= groundHeight) {
       const gap = groundHeight - this.root.position.y;
       if (gap > 0 && gap <= STEP_SNAP_MAX_GAP) {
