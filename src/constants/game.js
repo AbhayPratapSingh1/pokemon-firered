@@ -6,10 +6,7 @@ import * as THREE from "three";
 
 export const ACTIONS = {
   MESSAGE: "MESSAGE",
-  TELEPORT: "TELEPORT",
   GIVE_ITEM: "GIVE_ITEM",
-  DIALOGUE: "DIALOGUE",
-  ANIMATION: "ANIMATION",
   CHANGE_SPACE: "CHANGE_SPACE",
 };
 
@@ -50,15 +47,6 @@ export const OBJ = {
   GRASS: "grass",
   WATER: "water",
 
-  // Structure (decorative)
-  BANNER: "banner",
-  SHELTER: "shelter",
-  CHIMNEY: "chimney",
-  MAILBOX: "mailbox",
-  SIGN: "sign",
-  WINDOW_BOX: "windowBox",
-  FENCE: "fence",
-
   // Lab
   LAB_SHELF: "labShelf",
   LAB_MACHINE: "labMachine",
@@ -82,38 +70,11 @@ export const SPACES = {
 // DIRECTIONS
 // ============================================================================
 
-export const DIRECTIONS = {
+const DIRECTIONS = {
   NORTH: { name: "NORTH", doorSign: -1, rotation: Math.PI },
   SOUTH: { name: "SOUTH", doorSign: 1, rotation: 0 },
   EAST: { name: "EAST", doorSign: 0, rotation: -Math.PI / 2 },
   WEST: { name: "WEST", doorSign: 0, rotation: Math.PI / 2 },
-};
-
-// ============================================================================
-// COLLISION
-// ============================================================================
-
-export const COLLISION = {
-  RADIUS: 0.45,
-  HEIGHT: 1.8,
-  HEAD_HEIGHT: 1.55,
-  CAMERA_MARGIN: 0.25,
-  CAMERA_MIN_HEIGHT: 0.5,
-  STEP_SNAP_SMOOTHING: 18,
-  STEP_SNAP_MAX_GAP: 0.5,
-  STEP_SNAP_EPSILON: 0.01,
-};
-
-// ============================================================================
-// PHYSICS
-// ============================================================================
-
-export const PHYSICS = {
-  WALK_SPEED: 3.2,
-  SPRINT_MULTIPLIER: 1.8,
-  ACCELERATION: 12,
-  GRAVITY: -20,
-  JUMP_SPEED: 8,
 };
 
 // ============================================================================

@@ -3,9 +3,9 @@ import { Space } from "./engine/Space.js";
 import { SpaceManager } from "./engine/SpaceManager.js";
 import { Teleporter } from "./engine/Teleporter.js";
 import { buildTree } from "./components/Tree/Tree.js";
-import { DIRECTIONS, HOUSES, WORLD, SPACES, OBJ, COLLISION, COLORS } from "./constants/game.js";
+import { HOUSES, WORLD, SPACES, OBJ, COLORS } from "./constants/game.js";
 
-export { HOUSES, DIRECTIONS, WORLD } from "./constants/game.js";
+export { HOUSES, WORLD } from "./constants/game.js";
 
 // ============================================================================
 // Generic Object Builder

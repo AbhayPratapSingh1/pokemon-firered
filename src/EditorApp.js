@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { initPalette } from "./EditorPalette.js";
-import { initPlacement, addPartToScene } from "./EditorPlacement.js";
+import { initPlacement } from "./EditorPlacement.js";
 import { initInspector } from "./EditorInspector.js";
 import { initCameraPan } from "./EditorCameraPan.js";
 

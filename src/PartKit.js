@@ -1,18 +1,13 @@
 import * as THREE from "three";
 import { HOUSE_PART_BUILDERS } from "./HousePartBuilder.js";
-
-function withShadow(mesh) {
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
-}
+import { addShadow } from "./components/shared.js";
 
 /** Box primitive, base sitting at local y=0. */
 export function createBoxPart({ size = { w: 1, h: 1, d: 1 }, color = 0xb08968 } = {}) {
   const material = new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.w, size.h, size.d), material);
   mesh.position.y = size.h / 2;
-  return withShadow(mesh);
+  return addShadow(mesh);
 }
 
 /** Thin/tall box preset. */
@@ -27,7 +22,7 @@ export function createRoofPart({ size = { w: 2, d: 2, height: 1.2 }, color = 0xb
   const mesh = new THREE.Mesh(new THREE.ConeGeometry(radius, size.height, 4), material);
   mesh.rotation.y = Math.PI / 4;
   mesh.position.y = size.height / 2;
-  return withShadow(mesh);
+  return addShadow(mesh);
 }
 
 /** Cylinder primitive, base sitting at local y=0. */
@@ -38,7 +33,7 @@ export function createCylinderPart({ size = { radius: 0.5, height: 1.5 }, color 
     material
   );
   mesh.position.y = size.height / 2;
-  return withShadow(mesh);
+  return addShadow(mesh);
 }
 
 /** Primitive part builders (placed via the old palette). */
