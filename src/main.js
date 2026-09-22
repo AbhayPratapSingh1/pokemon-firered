@@ -47,12 +47,22 @@ scene.add(sunLight);
 const world = createWorld(scene);
 const { spaceManager, allTeleporters } = world;
 
-// Start inside the house for testing
+// Start inside the house
 spaceManager.clear();
 spaceManager.load(SPACE_LOOKUP["ASH_HOUSE"]);
 
+// --- Ground height ---
+function getGroundHeight(x, z) {
+  const current = spaceManager.getCurrent();
+  if (current && current.data && current.data.groundHeight) {
+    return current.data.groundHeight(x, z);
+  }
+  return 0;
+}
+
 // --- Player ---
 const player = new Player(scene, WORLD.SPAWN_POSITION);
+player.position.y = getGroundHeight(player.position.x, player.position.z);
 
 // --- Input ---
 const input = new InputManager(renderer.domElement);
@@ -64,15 +74,6 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-// --- Ground height ---
-function getGroundHeight(x, z) {
-  const current = spaceManager.getCurrent();
-  if (current && current.data && current.data.groundHeight) {
-    return current.data.groundHeight(x, z);
-  }
-  return 0;
-}
 
 // --- Teleport cooldown ---
 let teleportCooldown = 0;

@@ -863,6 +863,8 @@ function buildTeleporters(configs) {
       position: new THREE.Vector3(...cfg.spawnPosition),
       orientation: cfg.spawnOrientation || 0,
       radius: cfg.triggerRadius || 1.0,
+      width: cfg.triggerWidth || 0,
+      depth: cfg.triggerDepth || 0,
     });
     return { entry, exit: null, config: cfg };
   });

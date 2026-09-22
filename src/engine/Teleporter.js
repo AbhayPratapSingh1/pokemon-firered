@@ -3,27 +3,23 @@ import * as THREE from "three";
 /**
  * Teleporter — handles entry/exit between Spaces.
  *
+ * Shape:
+ *   - circular (default): triggerPosition + radius
+ *   - rectangular: triggerPosition + width/depth (axis-aligned box)
+ *
  * Types:
  * - trigger: auto on collision (door)
  * - action: manual on key press (TV, computer)
- *
- * On enter:
- *   1. Clear scene
- *   2. Load target space's interior + child exteriors
- *   3. Place player at position with orientation
- *
- * On exit:
- *   1. Clear scene
- *   2. Load parent space's context
- *   3. Place player at exit position with orientation
  */
 export class Teleporter {
   /**
    * @param {Object} opts
    * @param {string} opts.type - "trigger" | "action"
    * @param {Space} opts.target - the space to enter
-   * @param {THREE.Vector3} opts.triggerPosition - where to check collision (source zone)
-   * @param {number} opts.radius - trigger radius
+   * @param {THREE.Vector3} opts.triggerPosition - where to check collision (source zone center)
+   * @param {number} opts.radius - trigger radius (circular mode)
+   * @param {number} opts.width - trigger width along X (rectangular mode)
+   * @param {number} opts.depth - trigger depth along Z (rectangular mode)
    * @param {THREE.Vector3} opts.position - where to place player (destination)
    * @param {number} opts.orientation - player rotation on arrival (radians)
    * @param {string} opts.key - action key (for action type)
@@ -35,6 +31,8 @@ export class Teleporter {
     position = new THREE.Vector3(),
     orientation = 0,
     radius = 1.0,
+    width = 0,
+    depth = 0,
     key = "e",
   } = {}) {
     this.type = type;
@@ -43,11 +41,14 @@ export class Teleporter {
     this.position = position;
     this.orientation = orientation;
     this.radius = radius;
+    this.width = width;
+    this.depth = depth;
+    this.isRectangular = width > 0 && depth > 0;
     this.key = key;
 
     // Visual (for trigger type)
     this.visual = null;
-    if (type === "trigger" && radius > 0) {
+    if (type === "trigger" && (radius > 0 || this.isRectangular)) {
       this._createVisual();
     }
 
@@ -57,8 +58,20 @@ export class Teleporter {
   }
 
   /**
+   * Check if player position is inside the trigger zone.
+   */
+  _isInsideTrigger(playerPos) {
+    if (this.isRectangular) {
+      const dx = Math.abs(playerPos.x - this.triggerPosition.x);
+      const dz = Math.abs(playerPos.z - this.triggerPosition.z);
+      return dx <= this.width / 2 && dz <= this.depth / 2;
+    }
+    const dist = playerPos.distanceTo(this.triggerPosition);
+    return dist < this.radius;
+  }
+
+  /**
    * Update trigger teleporter (check collision with player).
-   * Checks against triggerPosition, not destination position.
    */
   updateTrigger(player, delta) {
     if (this.type !== "trigger") return false;
@@ -67,8 +80,7 @@ export class Teleporter {
       return false;
     }
 
-    const dist = player.position.distanceTo(this.triggerPosition);
-    if (dist < this.radius) {
+    if (this._isInsideTrigger(player.position)) {
       this.cooldown = this.cooldownDuration;
       return true;
     }
@@ -80,8 +92,7 @@ export class Teleporter {
    */
   isInRange(player) {
     if (this.type !== "action") return false;
-    const dist = player.position.distanceTo(this.triggerPosition);
-    return dist < this.radius;
+    return this._isInsideTrigger(player.position);
   }
 
   /**
@@ -104,15 +115,20 @@ export class Teleporter {
   }
 
   /**
-   * Create visual indicator (ring on ground).
+   * Create visual indicator (ring on ground or rectangle on ground).
    */
   _createVisual() {
-    const geometry = new THREE.RingGeometry(this.radius - 0.1, this.radius, 32);
+    let geometry;
+    if (this.isRectangular) {
+      geometry = new THREE.PlaneGeometry(this.width, this.depth);
+    } else {
+      geometry = new THREE.RingGeometry(this.radius - 0.1, this.radius, 32);
+    }
     const material = new THREE.MeshBasicMaterial({
       color: this.type === "trigger" ? 0x00e5ff : 0xff9100,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.4,
     });
     this.visual = new THREE.Mesh(geometry, material);
     this.visual.rotation.x = -Math.PI / 2;

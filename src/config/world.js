@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { SPACES } from "./spaces.js";
 
 export const WORLD = {
-  GROUND_SIZE: 200,
+  GROUND_SIZE: 800,
   TREE_COUNT: 0,
   TREE_RING_MIN: 30,
   TREE_RING_MAX: 70,

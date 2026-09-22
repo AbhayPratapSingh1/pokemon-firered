@@ -143,16 +143,18 @@ export const GARY_HOUSE = {
   teleporters: [
     {
       triggerSpace: "WORLD",
-      triggerPosition: [5, 0, -5.0],
-      triggerRadius: 0.3,
+      triggerPosition: [5, 0, -6.0],
+      triggerWidth: 1.8,
+      triggerDepth: 0.1,
       targetSpace: "GARY_HOUSE",
       spawnPosition: [400, 0, 303.8],
       spawnOrientation: Math.PI,
     },
     {
       triggerSpace: "GARY_HOUSE",
-      triggerPosition: [400, 0, 304.95],
-      triggerRadius: 0.3,
+      triggerPosition: [400, 0, 306.0],
+      triggerWidth: 1.8,
+      triggerDepth: 0.1,
       targetSpace: "WORLD",
       spawnPosition: [5, 0, -4.5],
       spawnOrientation: 0,
