@@ -15,5 +15,6 @@ export const WORLD = {
   objects: [
     SPACES.ASH_HOUSE,
     SPACES.GARY_HOUSE,
+    SPACES.OAK_LAB,
   ],
 };

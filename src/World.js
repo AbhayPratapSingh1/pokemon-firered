@@ -772,14 +772,21 @@ function registerBuilders() {
     walls.userData.cameraCollide = true;
     mesh.add(walls);
 
-    // Roof (4-sided pyramid)
+    // Roof
     const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.7 });
-    const roofRadius = (Math.hypot(w, d) / 2) * 1.05;
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(roofRadius, roofH, 4), roofMat);
-    roof.rotation.y = Math.PI / 4;
-    roof.position.y = wallH + roofH / 2;
-    roof.castShadow = true;
-    mesh.add(roof);
+    if (cfg.flatRoof) {
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.3, d + 0.4), roofMat);
+      roof.position.y = wallH + 0.15;
+      roof.castShadow = true;
+      mesh.add(roof);
+    } else {
+      const roofRadius = (Math.hypot(w, d) / 2) * 1.05;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(roofRadius, roofH, 4), roofMat);
+      roof.rotation.y = Math.PI / 4;
+      roof.position.y = wallH + roofH / 2;
+      roof.castShadow = true;
+      mesh.add(roof);
+    }
 
     // Door (front face = +Z)
     const doorMat = new THREE.MeshStandardMaterial({ color: doorColor, roughness: 0.8 });
@@ -906,8 +913,8 @@ function buildWorldSpace() {
       exclusionZones.push({
         x: ext.position[0],
         z: ext.position[2],
-        halfW: 6,
-        halfD: 6,
+        halfW: 4,
+        halfD: 4,
       });
     }
   }
