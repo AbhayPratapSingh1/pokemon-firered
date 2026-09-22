@@ -6,7 +6,7 @@ export const WORLD = {
   TREE_COUNT: 0,
   TREE_RING_MIN: 30,
   TREE_RING_MAX: 70,
-  SPAWN_POSITION: new THREE.Vector3(300, 0, 303),
+  SPAWN_POSITION: new THREE.Vector3(0, 0, 0),
   BACKGROUND_COLOR: 0x87ceeb,
   FOG_NEAR: 60,
   FOG_FAR: 160,

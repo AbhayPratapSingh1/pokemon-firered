@@ -47,9 +47,8 @@ scene.add(sunLight);
 const world = createWorld(scene);
 const { spaceManager, allTeleporters } = world;
 
-// Start inside the house
-spaceManager.clear();
-spaceManager.load(SPACE_LOOKUP["ASH_HOUSE"]);
+// Load world space
+spaceManager.load(SPACE_LOOKUP["WORLD"]);
 
 // --- Ground height ---
 function getGroundHeight(x, z) {
@@ -244,7 +243,9 @@ function animate() {
   // Debug HUD
   const debugEl = document.getElementById("debug-stair");
   if (debugEl) {
-    debugEl.textContent = `space: ${currentSpace ? currentSpace.name : "none"}`;
+    const currentSpace = spaceManager.getCurrent();
+    const pos = player.position;
+    debugEl.textContent = `space: ${currentSpace ? currentSpace.name : "none"} | pos: ${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
   }
 
   renderer.render(scene, camera);

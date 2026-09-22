@@ -37,7 +37,7 @@ export const ASH_HOUSE = {
     origin: [300, 0, 300],
     objects: [
       { type: OBJ.GROUND_FLOOR, position: [0, 0, 0], config: { width: 12, depth: 10 } },
-      { type: OBJ.WALLS, position: [0, 0, 0], collide: true, config: { width: 12, depth: 10, height: 8.0 } },
+      { type: OBJ.WALLS, position: [0, 0, 0], collide: true, config: { width: 12, depth: 10, height: 10.0 } },
       { type: OBJ.DOOR_FRAME, position: [0, 0, 5.0] },
 
       // --- Ground floor (south half) ---
@@ -136,7 +136,7 @@ export const ASH_HOUSE = {
         action: msg("Examine table", "A study table with textbooks and a Pokédex reference guide. Time to study... or not."),
       },
 
-      { type: OBJ.CEILING, position: [0, 8.0, 0] },
+      { type: OBJ.CEILING, position: [0, 10.0, 0] },
     ],
   },
   teleporters: [

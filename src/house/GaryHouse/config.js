@@ -38,7 +38,7 @@ export const GARY_HOUSE = {
     origin: [400, 0, 300],
     objects: [
       { type: OBJ.GROUND_FLOOR, position: [0, 0, 0], config: { width: 12, depth: 10 } },
-      { type: OBJ.WALLS, position: [0, 0, 0], collide: true, config: { width: 12, depth: 10, height: 8.0 } },
+      { type: OBJ.WALLS, position: [0, 0, 0], collide: true, config: { width: 12, depth: 10, height: 10.0 } },
       { type: OBJ.DOOR_FRAME, position: [0, 0, 5.0] },
 
       // --- Ground floor (south half) --- mirrored X ---
@@ -137,7 +137,7 @@ export const GARY_HOUSE = {
         action: msg("Examine table", "A polished desk with trophies and ribbons. Gary never lets you forget he's #1."),
       },
 
-      { type: OBJ.CEILING, position: [0, 8.0, 0] },
+      { type: OBJ.CEILING, position: [0, 10.0, 0] },
     ],
   },
   teleporters: [
