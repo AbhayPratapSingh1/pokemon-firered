@@ -150,7 +150,7 @@ function registerBuilders() {
     function addCol(cx, cz, sx, sz) {
       if (sx <= 0 || sz <= 0) return;
       const m = new THREE.Mesh(new THREE.BoxGeometry(sx, colH, sz), colMat);
-      m.position.set(cx, t / 2 - colH / 2, cz);
+      m.position.set(cx, 3 * t / 2 - colH / 2, cz);
       m.userData.collide = true;
       m.userData.canStandOn = true;
       mesh.add(m);
@@ -170,6 +170,18 @@ function registerBuilders() {
       const northZ2 = Math.min(hz1, oz2);
       addCol((hx1 + hx2) / 2, (oz1 + northZ2) / 2, hx2 - hx1, northZ2 - oz1);
     }
+  };
+
+  BUILDERS[OBJ.RAILING] = (mesh, cfg) => {
+    const w = cfg.width || 1, h = cfg.height || 1.0, d = cfg.depth || 0.1;
+    const color = cfg.color || COLORS.WOOD_DARK;
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    rail.position.y = h / 2;
+    rail.castShadow = true;
+    rail.receiveShadow = true;
+    rail.userData.collide = true;
+    mesh.add(rail);
   };
 
   BUILDERS[OBJ.DOOR_FRAME] = (mesh, cfg) => {

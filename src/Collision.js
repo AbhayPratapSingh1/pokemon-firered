@@ -28,12 +28,15 @@ export function resolveCollisions(position, radius, height, obstacles) {
       if (feetY >= stepSurface - STEP_UP_EPSILON) {
         // Player feet at or above step surface → push up (stepping onto it)
         position.y = stepSurface;
+      } else if (stepSurface - feetY <= MAX_STEP_HEIGHT) {
+        // Player feet below surface but within step-up range → push up onto surface
+        position.y = stepSurface;
       } else if (position.x > box.min.x && position.x < box.max.x &&
                  position.z > box.min.z && position.z < box.max.z) {
         // Player center is inside the box footprint → truly under it → head collision, push down
         position.y = boxBottom - height;
       } else {
-        // Player feet below step surface → push horizontally (hitting the side)
+        // Player feet too far below → push horizontally (hitting the side)
         if (overlapX < overlapZ) {
           const centerPlayer = position.x;
           const centerBox = (box.min.x + box.max.x) / 2;

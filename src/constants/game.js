@@ -30,6 +30,7 @@ export const OBJ = {
   WINDOW: "window",
   STAIRS: "stairs",
   STAIR_STEP: "stairStep",
+  RAILING: "railing",
 
   // Furniture
   TV: "tv",
@@ -185,7 +186,7 @@ export const HOUSES = {
       origin: [300, 0, 300],
       objects: [
         { type: OBJ.GROUND_FLOOR, position: [0, 0, 0], config: { width: 12, depth: 10 } },
-        { type: OBJ.WALLS, position: [0, 0, 0], collide: true, config: { width: 12, depth: 10, height: 6.0 } },
+        { type: OBJ.WALLS, position: [0, 0, 0], collide: true, config: { width: 12, depth: 10, height: 8.0 } },
         { type: OBJ.DOOR_FRAME, position: [0, 0, 5.0] },
         // Back wall (north): sink, almera, TV
         { type: OBJ.SINK, position: [-5, 0, -4.5], collide: true },
@@ -208,8 +209,24 @@ export const HOUSES = {
         { type: OBJ.STAIRS, position: [4.2, 2.2, -4.2], rotation: Math.PI / 2, collide: true, config: { stepsPerFlight: 14, stepWidth: 1.5, stepDepth: 0.3, stepHeight: 0.2, wallHeight: 1.0, sideWalls: false, direction: 1 } },
         // First floor ground with staircase cutout
         { type: OBJ.FLOOR_WITH_HOLE, position: [0,4.75, 0], config: { thickness: 0.15, outerX1: -6, outerX2: 6, outerZ1: -5, outerZ2: 5, holeX1:0.25, holeX2: 6, holeZ1: -5, holeZ2: -3.35 } },
+        // --- First floor railing around staircase hole ---
+        // South rail (along south edge of hole)
+        { type: OBJ.RAILING, position: [3.125, 4.975, -3.35], collide: true, config: { width: 5.75, height: 1.0, depth: 0.1 } },
+        // --- First floor furniture ---
+        // Bed (west side of first floor, against north wall)
+        { type: OBJ.BED, position: [-4, 4.975, -4], collide: true },
+        // Computer desk (west side, against west wall)
+        { type: OBJ.COMPUTER_DESK, position: [-5, 4.975, 0], rotation: Math.PI / 2, collide: true },
+        // TV (south section, against south wall)
+        { type: OBJ.TV, position: [3, 4.975, 4.5], collide: true },
+        // Plant (south-east corner)
+        { type: OBJ.PLANT, position: [5, 4.975, 4], collide: true },
+        // Plant (west side near stairs)
+        { type: OBJ.PLANT, position: [-2, 4.975, -4.5], collide: true },
+        // Table (center of south section)
+        { type: OBJ.TABLE, position: [3, 4.975, 1], collide: true },
         // Ceiling
-        { type: OBJ.CEILING, position: [0, 6.0, 0] },
+        { type: OBJ.CEILING, position: [0, 8.0, 0] },
       ],
     },
     teleporters: [
