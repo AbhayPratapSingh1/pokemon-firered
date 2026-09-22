@@ -1,0 +1,5 @@
+export const ACTIONS = {
+  MESSAGE: "MESSAGE",
+  GIVE_ITEM: "GIVE_ITEM",
+  CHANGE_SPACE: "CHANGE_SPACE",
+};

@@ -1,0 +1,6 @@
+export const SPACES = {
+  WORLD: "WORLD",
+  ASH_HOUSE: "ASH_HOUSE",
+  GARY_HOUSE: "GARY_HOUSE",
+  OAK_LAB: "OAK_LAB",
+};

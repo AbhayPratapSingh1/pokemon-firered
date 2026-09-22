@@ -3,9 +3,9 @@ import { Space } from "./engine/Space.js";
 import { SpaceManager } from "./engine/SpaceManager.js";
 import { Teleporter } from "./engine/Teleporter.js";
 import { buildTree } from "./components/Tree/Tree.js";
-import { HOUSES, WORLD, SPACES, OBJ, COLORS } from "./constants/game.js";
+import { HOUSES, WORLD, SPACES, OBJ, COLORS } from "./config/index.js";
 
-export { HOUSES, WORLD } from "./constants/game.js";
+export { HOUSES, WORLD } from "./config/index.js";
 
 // ============================================================================
 // Generic Object Builder
@@ -612,16 +612,17 @@ function registerBuilders() {
         }
       }
     } else {
-      // L-shape: flight A goes north, flight B goes west
+      // L-shape: direction 1 = north then west, -1 = south then east
+      const dir = cfg.direction || 1;
       for (let i = 0; i < stepsPerFlight; i++) {
-        placeStep(0, i * stepH, -i * stepD, i === 0, true);
+        placeStep(0, i * stepH, -i * stepD * dir, i === 0, true);
       }
 
       const landingY = stepsPerFlight * stepH;
-      const landingZ = -(stepsPerFlight - 1) * stepD;
+      const landingZ = -(stepsPerFlight - 1) * stepD * dir;
 
       for (let i = 0; i < stepsPerFlight; i++) {
-        placeStep(-(i + 1) * stepD, landingY + (i + 1) * stepH, landingZ, true, i === stepsPerFlight - 1, Math.PI / 2);
+        placeStep(-(i + 1) * stepD * dir, landingY + (i + 1) * stepH, landingZ, true, i === stepsPerFlight - 1, Math.PI / 2 * dir);
       }
 
       // Outer wall along right side of flight A
@@ -630,7 +631,7 @@ function registerBuilders() {
         new THREE.BoxGeometry(wallThick, wallH * 2, flightALength + stepD * 2),
         new THREE.MeshStandardMaterial({ color: COLORS.WALL_DEFAULT, roughness: 0.9 })
       );
-      outerWall.position.set(stepW / 2 + wallThick / 2 + 0.01, wallH, -flightALength / 2 + stepD / 2);
+      outerWall.position.set(stepW / 2 + wallThick / 2 + 0.01, wallH, -flightALength / 2 * dir + stepD / 2 * dir);
       outerWall.castShadow = true;
       outerWall.receiveShadow = true;
       outerWall.userData.collide = true;
@@ -642,7 +643,7 @@ function registerBuilders() {
         new THREE.BoxGeometry(flightBLength + stepD * 2, wallH * 2, wallThick),
         new THREE.MeshStandardMaterial({ color: COLORS.WALL_DEFAULT, roughness: 0.9 })
       );
-      backWall.position.set(-flightBLength / 2 - stepD / 2, landingY + (stepsPerFlight / 2) * stepH, landingZ - stepW / 2 - wallThick / 2 - 0.01);
+      backWall.position.set(-flightBLength / 2 * dir - stepD / 2 * dir, landingY + (stepsPerFlight / 2) * stepH, landingZ - stepW / 2 - wallThick / 2 - 0.01);
       backWall.castShadow = true;
       backWall.receiveShadow = true;
       backWall.userData.collide = true;
@@ -845,6 +846,10 @@ function buildInteriorObjects(objects, origin) {
         if (child.isMesh) child.userData.canStandOn = true;
       });
     }
+    // Store action on group for interaction detection
+    if (obj.action) {
+      group.userData.action = obj.action;
+    }
     return group;
   });
 }
@@ -954,6 +959,8 @@ function buildWorldSpace() {
 
     // Collect interior obstacles (walls, furniture with collide)
     const interiorObstacles = [];
+    // Collect interactable objects (furniture with actions)
+    const interiorInteractables = [];
     for (const obj of houseSpace.interior) {
       obj.traverse((child) => {
         if (child.isMesh && child.userData.collide) {
@@ -962,12 +969,16 @@ function buildWorldSpace() {
           interiorObstacles.push({ mesh: child, box, canStandOn: !!child.userData.canStandOn });
         }
       });
+      if (obj.userData.action) {
+        interiorInteractables.push(obj);
+      }
     }
 
     // Add ground height function
     houseSpace.data = {
       groundHeight: () => 0,
       obstacles: interiorObstacles,
+      interactables: interiorInteractables,
     };
 
     // Build teleporters

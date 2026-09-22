@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { createWorld, SPACE_LOOKUP, WORLD } from "./World.js";
-import { ACTIONS, COLORS } from "./constants/game.js";
+import { ACTIONS, COLORS } from "./config/index.js";
 import { Player } from "./Player.js";
 import { InputManager } from "./Input.js";
 import { CameraController } from "./CameraController.js";
@@ -80,6 +80,11 @@ let inputLockTimer = 0;
 const TELEPORT_GLOBAL_COOLDOWN = 1.0;
 const INPUT_LOCK_DURATION = 0.2;
 
+// --- Interaction ---
+const INTERACT_RANGE = 2.0;
+let nearestInteractable = null;
+const promptEl = document.getElementById("interact-prompt");
+
 // --- Teleport function ---
 function handleTeleport(targetSpaceName, spawnPos, spawnOrientation) {
   const targetSpace = SPACE_LOOKUP[targetSpaceName];
@@ -104,23 +109,37 @@ function handleTeleport(targetSpaceName, spawnPos, spawnOrientation) {
 }
 
 // --- Action handler ---
+let messageTimer = 0;
+const MESSAGE_DURATION = 3.0;
+const messageEl = document.getElementById("interact-message");
+
 function handleAction(action) {
   switch (action.type) {
     case ACTIONS.MESSAGE:
-      console.log(`[ACTION] ${action.config.message}`);
+      console.log(`[ACTION] ${action.message}`);
+      showMessage(action.message);
       break;
     case ACTIONS.GIVE_ITEM:
-      console.log(`[ACTION] ${action.config.message}`);
+      console.log(`[ACTION] ${action.message}`);
+      showMessage(action.message);
       break;
     case ACTIONS.CHANGE_SPACE:
       handleTeleport(
-        action.config.targetSpace,
-        action.config.spawnPosition,
-        action.config.spawnOrientation || 0
+        action.targetSpace,
+        action.spawnPosition,
+        action.spawnOrientation || 0
       );
       break;
     default:
       console.log(`[ACTION] Unknown action type: ${action.type}`);
+  }
+}
+
+function showMessage(text) {
+  if (messageEl) {
+    messageEl.textContent = text;
+    messageEl.classList.remove("hidden");
+    messageTimer = MESSAGE_DURATION;
   }
 }
 
@@ -167,12 +186,48 @@ function animate() {
     tp.entry.update(delta);
   }
 
+  // Interaction: find nearest interactable and handle E press
+  nearestInteractable = null;
+  const currentSpace = spaceManager.getCurrent();
+  if (currentSpace && currentSpace.data && currentSpace.data.interactables) {
+    let closestDist = INTERACT_RANGE;
+    for (const obj of currentSpace.data.interactables) {
+      const dist = player.position.distanceTo(obj.position);
+      if (dist < closestDist) {
+        closestDist = dist;
+        nearestInteractable = obj;
+      }
+    }
+  }
+
+  // Show/hide prompt
+  if (promptEl) {
+    if (nearestInteractable && inputLockTimer <= 0) {
+      promptEl.textContent = nearestInteractable.userData.action.prompt;
+      promptEl.classList.remove("hidden");
+    } else {
+      promptEl.classList.add("hidden");
+    }
+  }
+
+  // E key triggers action
+  if (nearestInteractable && input.interactPressed && inputLockTimer <= 0) {
+    handleAction(nearestInteractable.userData.action);
+  }
+
+  // Message timer
+  if (messageTimer > 0) {
+    messageTimer -= delta;
+    if (messageTimer <= 0 && messageEl) {
+      messageEl.classList.add("hidden");
+    }
+  }
+
   // Update player
   const obstacles = getCurrentObstacles();
   player.update(delta, input, cameraController.yaw, obstacles, getGroundHeight);
 
   // Update camera — collect meshes that block camera ray
-  const currentSpace = spaceManager.getCurrent();
   const cameraCollideMeshes = [];
   if (currentSpace) {
     for (const obj of currentSpace.getInsideObjects()) {
@@ -188,7 +243,6 @@ function animate() {
   // Debug HUD
   const debugEl = document.getElementById("debug-stair");
   if (debugEl) {
-    const currentSpace = spaceManager.getCurrent();
     debugEl.textContent = `space: ${currentSpace ? currentSpace.name : "none"}`;
   }
 
